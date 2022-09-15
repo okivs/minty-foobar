@@ -19,7 +19,7 @@ This theme is currently configured for 1.6 stable versions of foobar. I haven't 
 
 To configure the waveform seekbar:
 
-0. Right click on the waveform seekbar > Configure.
+0. Right click on the waveform seekbar > Configure (you may have to start playing a song to initialize it).
 1. Choose direct3d frontend.
 2. Open `Frontend settings...` and paste the raw contents of [waveform-seekbar.cpp](https://github.com/okivs/minty-foobar/blob/main/minty/waveform-seekbar.cpp).
 3. In `Downmix display` dropdown, select `Mix-down to mono`
