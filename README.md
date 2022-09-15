@@ -10,7 +10,7 @@ This theme is currently configured for 1.6 stable versions of foobar. I haven't 
 
 0. Close foobar.
 1. Download the [github repository](https://github.com/okivs/minty-foobar/archive/refs/heads/main.zip).
-2. Copy foo-components and foo_spider_monkey_panel/packages to your foobar profile directory.
+2. Copy `foo-components` and `foo_spider_monkey_panel/packages` to your foobar profile directory.
     - For standard installations this is at `Users\username\AppData\Roaming\foobar2000`
 3. Open foobar and select Columns UI or enable it via File > Preferences > Display, if it's not already.
 4. In File > Preferences > Display > Columns UI > Main, select `Import Configuration` and import `minty.fcl` from the minty folder.
