@@ -72,11 +72,13 @@ float4 getWaveTopColor()
 
 float4 getReflectionHightlightColor()
 {
-	float4 color = waveHighlightColor;
-	color = multiply(color, 0.75);
-	color = linearDodge(color, 0.6);
+	// toggled this off to disable augmenting the color
+	//float4 color = waveHighlightColor;
+	//color = multiply(color, 0.75);
+	//color = linearDodge(color, 0.6);
+	//return color;
 
-	return color;
+	return waveHighlightColor;
 }
 
 float2 getPixelSize()
