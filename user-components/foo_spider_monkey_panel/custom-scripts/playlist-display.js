@@ -1,6 +1,7 @@
 ﻿include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 
+//let colorFont = _RGB(255, 255, 255);
 let colorFont = window.GetColourCUI(1);
 let colorBG = window.GetColourCUI(4);
 let font = gdi.Font('Quicksand Medium',14,0);
@@ -92,15 +93,15 @@ function checkViewState() {
 
     } else if (playingPlaylist === viewingPlaylist && fb.IsPaused) {
 
-        return `▶️ ${playingPlaylist}`;
+        return `⏸︎ ${playingPlaylist}`;
 
     } else if (playingPlaylist === viewingPlaylist && fb.IsPlaying) {
 
-        return `▶️ ${playingPlaylist}`;
+        return `⏯︎ ${playingPlaylist}`;
 
     } else if (playingPlaylist !== viewingPlaylist) {
 
-        let state = fb.IsPaused ? `▶️ ${playingPlaylist}` : `▶️ ${playingPlaylist}`;
+        let state = fb.IsPaused ? `⏸︎ ${playingPlaylist}` : `⏯︎ ${playingPlaylist}`;
         return `${state} • ${plman.GetPlaylistName(activePlaylist)}`;
 
     } else {
