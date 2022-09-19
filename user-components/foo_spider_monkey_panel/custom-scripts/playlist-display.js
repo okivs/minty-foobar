@@ -31,10 +31,9 @@ function makeContextMenu(x, y) {
     plMenu.AppendMenuSeparator();
     plMenu.AppendMenuItem(MF_STRING, 6, "Remove current playlist");
     plMenu.AppendTo(baseMenu, MF_STRING, "Playlist...")
-    
-    baseMenu.AppendMenuSeparator();
-    
+	
     if (plman.PlaylistCount > 0) {
+	baseMenu.AppendMenuSeparator();
         for (let i = 0; i < plman.PlaylistCount; i++) {
             let listName = plman.GetPlaylistName(i);
             let listCount = plman.PlaylistItemCount(i);
@@ -192,7 +191,6 @@ function on_paint(gr) {
         infoText = `${plman.GetPlaylistName(activePlaylist)} (${playlistItemCount})`;
     }
     
-    console.log(w)
     gr.FillSolidRect(0, 0, w, h, colorBG);
     gr.GdiDrawText(infoText, font, colorFont, 6, 0, w - 12, h - 2, 0x00000020|DT_VCENTER|DT_CENTER|0x00040000);
 }
