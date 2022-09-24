@@ -10,6 +10,8 @@ minty is a theme for foobar2k leaning on the Columns UI, Panel Stack Splitter an
 
 ![](https://i.imgur.com/Z9vtwKe.png)
 
+![](https://i.imgur.com/axg98D2.png)
+
 ## Installation
 
 This theme is currently configured for v1.6 stable versions of foobar. I haven't yet got around to trying v2.0 of foobar yet, since not all old plugins are compatible with 64-bit v2.0.
