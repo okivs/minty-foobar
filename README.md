@@ -4,13 +4,13 @@ minty is a theme for foobar2k leaning on the Columns UI, Panel Stack Splitter an
 
 ## Preview
 
-![](https://preview.redd.it/nqy74ohzr1o91.png?width=1920&format=png&auto=webp&s=d0040b52e8d4ce18da521f47a6d74c676209e334)
+![](https://i.imgur.com/n9VC9SA.png)
 
-![](https://preview.redd.it/j7myprk1s1o91.png?width=1920&format=png&auto=webp&s=2c99ea2871a1759c8334c7967c666ca32568e1fe)
+![](https://i.imgur.com/u0xoVHS.png)
 
-![](https://i.imgur.com/Z9vtwKe.png)
+![](https://i.imgur.com/mnQexPK.png)
 
-![](https://i.imgur.com/axg98D2.png)
+![](https://i.imgur.com/Rajdw73.png)
 
 ## Installation
 
