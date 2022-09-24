@@ -1,12 +1,12 @@
 # minty for foobar2k
 
-![](https://preview.redd.it/nqy74ohzr1o91.png?width=1920&format=png&auto=webp&s=d0040b52e8d4ce18da521f47a6d74c676209e334)
+![](https://i.imgur.com/Z9vtwKe.png)
 
 minty is a theme for foobar2k leaning on the Columns UI, Panel Stack Splitter and Spider Monkey Panel components.
 
 ## Installation
 
-This theme is currently configured for 1.6 stable versions of foobar. I haven't yet got around to trying 2.0 versions of foobar yet.
+This theme is currently configured for v1.6 stable versions of foobar. I haven't yet got around to trying v2.0 of foobar yet, since not all old plugins are compatible with 64-bit v2.0.
 
 0. Close foobar.
 1. Download the [github repository](https://github.com/okivs/minty-foobar/archive/refs/heads/main.zip).
