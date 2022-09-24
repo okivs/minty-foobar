@@ -1,3 +1,5 @@
+﻿'use strict';
+
 class Scrollbar {
 	constructor() {
 		this.active = true;
@@ -105,7 +107,7 @@ class Scrollbar {
 		}, 16);
 
 		this.hideDebounce = $.debounce(() => {
-			if (ppt.countsRight && !panel.imgView && (!ppt.rootNode || pop.inlineRoot)) return;
+			if ((ppt.countsRight || ppt.itemShowDuration) && !panel.imgView && (!ppt.rootNode || pop.inlineRoot)) return;
 			if (this.scrollbar.zone) return;
 			this.active = false;
 			this.cur_active = this.active;
@@ -221,11 +223,14 @@ class Scrollbar {
 			const ix = img.style.vertical ? (Math.ceil((panel.m.y + sbar.delta - img.panel.y) / img.row.h) - 1) * (!ppt.albumArtFlowMode ? img.columns : 1) : Math.ceil((panel.m.x + sbar.delta - img.panel.x) / img.columnWidth) - 1;
 			if (ix < 0 || ix > pop.tree.length - 1) return;
 			let letter = panel.lines == 1 || !ppt.albumArtFlipLabels ? pop.tree[ix].grp : pop.tree[ix].lot;
-			letter = !panel.colMarker ? letter.charAt().toUpperCase() : letter.replace(/@!#.*?@!#/g, '').charAt().toUpperCase();
-			const verticalAdjacent = ppt.albumArtFlowMode && img.style.vertical && img.columnWidth < img.panel.w - img.letter.w * 1.25;
-			if (img.style.vertical && !verticalAdjacent) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, img.letter.w + 1, img.text.h + 2, ui.col.bg3);
-			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, !verticalAdjacent ? ui.l.w : sbar_x - img.letter.w * 1.25, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, img.letter.w, img.text.h, panel.cc);
-			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - img.letter.w / 2, sbar_y - img.text.h, img.letter.w, img.text.h, panel.cc);
+			if (panel.colMarker) letter = letter.replace(/@!#.*?@!#/g, '');
+			const letter_w = gr.CalcTextWidth(letter, ui.font.main) + img.letter.w;
+			const w1 = Math.min(letter_w, ui.w - img.panel.x - img.letter.w);
+			const w2 = Math.min(letter_w, ui.w - img.panel.x) + 1; 
+			if (img.style.vertical) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w2, img.text.h + 2, ui.col.bg6);
+			if (img.style.vertical) gr.FillSolidRect(0, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w2, img.text.h + 2, ui.col.bg3);
+			if (img.style.vertical) gr.GdiDrawText(letter, ui.font.main, ui.col.text, ui.l.w + img.letter.w / 2, this.y + this.bar.y + this.bar.h / 2 - img.text.h / 2, w1, img.text.h, panel.lc);
+			else gr.GdiDrawText(letter, ui.font.main, ui.col.text, this.x + this.bar.x + this.bar.h / 2 - w1 / 2, sbar_y - img.text.h, w1, img.text.h, panel.cce);
 		}
 	}
 
@@ -364,7 +369,7 @@ class Scrollbar {
 		// panel info
 		if (this.vertical) this.narrow.x = this.x + this.w - $.clamp(ui.sbar.narrowWidth, 5, this.w);
 		else this.narrow.y = this.y + this.h - $.clamp(ui.sbar.narrowWidth, 5, this.h);
-		panel.tree.w = ui.w - Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? !ppt.countsRight ? ui.sbar.sp + ui.sz.sel : ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
+		panel.tree.w = ui.w - Math.max(ppt.sbarShow && this.scrollable_lines > 0 ? !ppt.countsRight && !ppt.itemShowDuration ? ui.sbar.sp + ui.sz.sel : ppt.sbarShow == 2 ? ui.sbar.sp + ui.sz.margin : ppt.sbarShow == 1 ? (ui.w - this.narrow.x) + ui.sz.marginRight + Math.max(this.w - 11, 0) : ui.sz.sel : ui.sz.sel, ui.sz.margin);
 		pop.id = ui.id.tree + ppt.fullLineSelection + panel.tree.w + panel.imgView + ppt.albumArtLabelType + ppt.albumArtFlipLabels + ppt.albumArtFlowMode;
 		panel.tree.stripe.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad : ui.w;
 		panel.tree.sel.w = ppt.sbarShow == 2 && this.scrollable_lines > 0 ? ui.w - ui.sbar.sp - ui.sz.pad * 2 : ui.w - ui.sz.pad * 2;

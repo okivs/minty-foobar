@@ -1,4 +1,6 @@
-﻿function on_colours_changed() {
+﻿'use strict';
+
+function on_colours_changed() {
 	ui.getColours();
 
 	if (panel.colMarker) {
@@ -58,7 +60,9 @@ function on_metadb_changed(handleList, isDatabase) {
 		handleList.Convert().some(h => {
 			const i = lib.full_list.Find(h);
 			if (i != -1) {
-				lib.treeState(false, 2);
+				const isMainChanged = lib.isMainChanged(handleList);
+				if (isMainChanged == 'outOfBounds') return;
+				if (isMainChanged) lib.treeState(false, 2);
 				ui.focus_changed();
 				return true;
 			}
@@ -155,7 +159,7 @@ function on_mouse_lbtn_down(x, y) {
 		x: x,
 		y: y
 	};
-	if (ppt.searchShow || ppt.sbarShow) but.lbtn_dn(x, y);
+	if (ui.style.topBarShow || ppt.sbarShow) but.lbtn_dn(x, y);
 	if (ppt.searchShow) search.lbtn_dn(x, y);
 	pop.lbtn_dn(x, y);
 	sbar.lbtn_dn(x, y);
@@ -170,7 +174,7 @@ function on_mouse_lbtn_up(x, y) {
 }
 
 function on_mouse_leave() {
-	if (ppt.searchShow || ppt.sbarShow) but.leave();
+	if (ui.style.topBarShow || ppt.sbarShow) but.leave();
 	sbar.leave();
 	pop.leave();
 }
@@ -182,7 +186,7 @@ function on_mouse_mbtn_up(x, y) {
 function on_mouse_move(x, y) {
 	if (panel.m.x == x && panel.m.y == y) return;
 	pop.hand = false;
-	if (ppt.searchShow || ppt.sbarShow) but.move(x, y);
+	if (ui.style.topBarShow || ppt.sbarShow) but.move(x, y);
 	if (ppt.searchShow) search.move(x, y);
 	pop.move(x, y);
 	pop.dragDrop(x, y);
@@ -211,7 +215,7 @@ function on_notify_data(name, info) {
 			if (ppt.libSource == 2) {
 				lib.list = new FbMetadbHandleList(info);
 				lib.full_list = lib.list.Clone();
-				const pln = plman.FindOrCreatePlaylist('Library Tree Panel Selection', false);
+				const pln = plman.FindOrCreatePlaylist(ppt.panelSelectionPlaylist, false);
 				plman.ClearPlaylist(pln);
 				plman.InsertPlaylistItems(pln, 0, lib.list);
 				lib.searchCache = {};
@@ -321,10 +325,11 @@ function on_size() {
 	ui.h = window.Height;
 	if (!ui.w || !ui.h) return;
 	pop.deactivateTooltip();
+	tooltip.SetMaxWidth(Math.max(ui.w, 800));
 	ui.blurReset();
 	ui.getFont();
 	panel.on_size();
-	if (ppt.searchShow || ppt.sbarShow) but.refresh(true);
+	if (ui.style.topBarShow || ppt.sbarShow) but.refresh(true);
 	sbar.resetAuto();
 	find.on_size();
 }

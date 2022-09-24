@@ -1,3 +1,5 @@
+﻿'use strict';
+
 window.DlgCode = 0x004;
 
 class UserInterface {
@@ -15,15 +17,17 @@ class UserInterface {
 			bg3: 0x10ffffff,
 			bg4: 0x1fffffff,
 			bg5: 0xffffffff,
+			bg6: 0x04000000,
 			txt: '',
 			txt_h: ''
 		}
 
 		this.font = {
+			duration: gdi.Font('Segoe UI Semibold', 16, 0),
 			find: gdi.Font('Segoe UI', 24, 0),
-			group: gdi.Font('Segoe UI', 16, 0),
+			group: gdi.Font('Segoe UI', 16, 1),
 			groupEllipsisSpace: 0,
-			lot: gdi.Font('Segoe UI', 16, 0),
+			lot: gdi.Font('Segoe UI Semibold', 16, 0),
 			lotEllipsisSpace: 0,
 			main: gdi.Font('Segoe UI', 16, 0),
 			mainEllipsisSpace: 0,
@@ -197,7 +201,7 @@ class UserInterface {
 				this.sz.node = Math.round($.clamp(this.sz.node, 7, this.row.h * 1.15));
 				let mod = 0;
 				if (ppt.nodeStyle < 3 && this.sz.node > 15) mod = (this.sz.node % 2) - 1;
-				this.icon.font = gdi.Font(this.icon.fontName, this.sz.node + mod, ppt.nodeStyle != 4 ? 0 : this.icon.fontStyle);
+				this.icon.font = gdi.Font(this.icon.fontName, this.sz.node + mod, ppt.nodeStyle != 6 ? 0 : this.icon.fontStyle);
 				ppt.zoomNode = Math.round(this.sz.node / ppt.baseFontSize * 100);
 			}
 			pop.createImages();
@@ -206,7 +210,7 @@ class UserInterface {
 			this.font.lotEllipsisSpace = g.CalcTextWidth(' ...', this.font.lot);
 			this.sz.sp = Math.max(Math.round(g.CalcTextWidth(' ', this.font.main)), 4);
 			this.sz.sp1 = Math.max(Math.round(this.sz.sp * 1.5), 6);
-			if (ppt.nodeStyle && ppt.nodeStyle < 5) {
+			if (ppt.nodeStyle && ppt.nodeStyle < 7) {
 				const sp_e = g.MeasureString(this.icon.expand, this.icon.font, 0, 0, 500, 500).Width;
 				const sp_c = g.MeasureString(this.icon.collapse, this.icon.font, 0, 0, 500, 500).Width;
 				this.icon.offset = Math.max((sp_c - sp_e) / 2, 0);
@@ -223,11 +227,11 @@ class UserInterface {
 
 		this.sz.sel = (this.style.squareNode ? this.sz.sp1 : this.sz.sp + Math.round(this.sz.sp / 3)) / 2;
 		this.sz.margin = this.style.topBarShow && pop.inlineRoot ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
-		this.sz.marginRight = ppt.countsRight ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
+		this.sz.marginRight = ppt.countsRight || ppt.itemShowDuration ? ppt.margin + Math.floor(Math.max(this.font.main.Size * 10 / 27, 5)) : ppt.margin;
 		this.sz.marginSearch = this.sz.margin;
 
-		if (this.style.topBarShow && (ppt.countsRight || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3)) this.sz.marginSearch -= 1;
-		if (this.style.topBarShow && !pop.inlineRoot && ppt.nodeStyle == 3) this.sz.marginSearch -= 1;
+		if (this.style.topBarShow && (ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot || ppt.nodeStyle == 3 || ppt.nodeStyle == 4)) this.sz.marginSearch -= 1;
+		if (this.style.topBarShow && !pop.inlineRoot && (ppt.nodeStyle == 3 || ppt.nodeStyle == 4)) this.sz.marginSearch -= 1;
 		this.id.tree = this.font.main.Name + this.font.main.Size + this.font.main.Style + this.icon.w + this.sz.margin + this.sz.marginSearch;
 		if (refreshImg) img.sizeDebounce();
 	}
@@ -313,14 +317,23 @@ class UserInterface {
 					g.SetInterpolationMode(0);
 					if (ppt.blurAutofill) image = image.Clone(imgx, imgy, imgw, imgh);
 					if (this.img.blurBlend) {
-						const iSmall = image.Resize(this.w * this.img.blurLevel / 100, this.h * this.img.blurLevel / 100, 2);
-						const iFull = iSmall.Resize(this.w, this.h, 2);
-						const offset = 90 - this.img.blurLevel;
-						g.DrawImage(iFull, 0 - offset, 0 - offset, this.w + offset * 2, this.h + offset * 2, 0, 0, iFull.Width, iFull.Height, 0, this.img.blendAlpha);
+							if (ppt.blurTemp) {
+							const iSmall = image.Resize(this.w * this.img.blurLevel / 100, this.h * this.img.blurLevel / 100, 2);
+							const iFull = iSmall.Resize(this.w, this.h, 2);
+							const offset = 90 - this.img.blurLevel;
+							g.DrawImage(iFull, 0 - offset, 0 - offset, this.w + offset * 2, this.h + offset * 2, 0, 0, iFull.Width, iFull.Height, 0, this.img.blendAlpha);
+						} else g.DrawImage(image, 0, 0, this.w, this.h, 0, 0, image.Width, image.Height, 0, this.img.blendAlpha); // no blur
 					} else {
-						g.DrawImage(image, 0, 0, this.w, this.h, 0, 0, image.Width, image.Height);
-						if (this.img.blurLevel > 1) gi.StackBlur(this.img.blurLevel);
-						g.FillSolidRect(0, 0, this.w, this.h, this.isImageDark(gi) ? this.col.bg_light : this.col.bg_dark);
+						if (ppt.theme == 1 || ppt.theme == 3) {
+							g.DrawImage(image, 0, 0, this.w, this.h, 0, 0, image.Width, image.Height);
+							if (this.img.blurLevel > 1) gi.StackBlur(this.img.blurLevel);
+							g.FillSolidRect(0, 0, this.w, this.h, this.isImageLight(gi) ? this.col.bg_light : this.col.bg_dark);
+						}
+						if (ppt.theme == 4) {
+							g.FillSolidRect(0, 0, this.w, this.h, this.getRandomCol());
+							g.DrawImage(image, 0, 0, this.w, this.h, 0, 0, image.Width, image.Height, 0, this.getImgAlpha(image));
+							if (this.img.blurLevel > 1) gi.StackBlur(this.img.blurLevel);
+						}
 					}
 					break;
 				case !this.img.isBlur:
@@ -371,12 +384,12 @@ class UserInterface {
 	}
 
 	getBlurColours() {
-		this.img.isBlur = ppt.theme && ppt.theme < 4;
-		this.img.bg = ppt.theme == 4;
+		this.img.isBlur = ppt.theme && ppt.theme < 5;
+		this.img.bg = ppt.theme == 5;
 		this.img.blendAlpha = $.clamp($.clamp(ppt.blurAlpha, 0, 100) * 105 / 30, 0, 255);
 		this.img.blurAlpha = $.clamp(ppt.blurAlpha, 0, 100) / 30;
 		this.img.blurBlend = ppt.theme == 2;
-		this.img.blurDark = ppt.theme == 1;
+		this.img.blurDark = ppt.theme == 1 || ppt.theme == 4;
 		this.img.blurLevel = ppt.theme == 2 ? 91.05 - $.clamp(ppt.blurTemp, 1.05, 90) : $.clamp(ppt.blurTemp * 2, 0, 254);
 		this.img.blurLight = ppt.theme == 3;
 		this.img.covAlpha = $.clamp(ppt.covAlpha * 2.55, 0, 255);
@@ -405,7 +418,7 @@ class UserInterface {
 		if (!handle) handle = fb.IsPlaying ? fb.GetNowPlaying() : fb.GetFocusItem();
 		if (handle) {
 			this.cur_handle = handle;
-			utils.GetAlbumArtAsync(window.ID, handle, 0);
+			utils.GetAlbumArtAsync(0, handle, 0);
 			return;
 		}
 		if (fb.IsPlaying) return;
@@ -418,6 +431,8 @@ class UserInterface {
 	}
 
 	getFont() {
+		const RunningWine = () => utils.IsFile('Z:\\bin\\bash' || 'Z:\\bin\\ls' || 'Z:\\bin\\sh' || 'Z:\\etc\\fstab'); /* detects if user is running Wine on Linux or MacOs, default Wine mount point is Z:\ */
+
 		if (ppt.custFontUse && ppt.custFont.length) {
 			const custFont = $.split(ppt.custFont, 1);
 			this.font.main = gdi.Font(custFont[0], Math.max(Math.round($.value(custFont[1], 16, 0)), 1), Math.round($.value(custFont[2], 0, 0)));
@@ -426,7 +441,7 @@ class UserInterface {
 
 		if (this.id.local) this.font.main = c_font;
 
-		if (!this.font.main) {
+		if (!this.font.main || /tahoma/i.test(this.font.main.Name) && RunningWine()) { // Windows: check still needed (test MS Serif or Modern, neither can be used); Wine: tahoma is default system font, but bold and some unicode characters don't work: if Wine + tahoma detected changed to Segoe UI (if that's not installed, tahoma is still used) 
 			this.font.main = gdi.Font('Segoe UI', 16, 0);
 			$.trace('Spider Monkey Panel is unable to use your default font. Using Segoe UI at default size & style instead', false);
 		}
@@ -458,18 +473,23 @@ class UserInterface {
 
 		this.font.small = gdi.Font(this.font.main.Name, Math.round(this.font.main.Size * 12 / 14), this.font.main.Style);
 		this.font.tracks = gdi.Font('Arial', Math.round(this.font.main.Size * 12 / 14), 2);
-		this.sz.sideMarker = $.clamp(Math.floor(this.font.main.Size / 7), 2, 10);
+		this.sz.sideMarker = ppt.sideMarkerWidth ? Math.max(ppt.sideMarkerWidth, 1) : $.clamp(Math.floor(this.font.main.Size / 7), 2, 10);
 		this.sbar.narrowWidth = ppt.narrowSbarWidth == 0 ? this.sz.sideMarker : ppt.narrowSbarWidth;
 
 		if (ppt.custAlbumArtGrpFontUse && ppt.custAlbumArtGrpFont.length) {
 			const custFont = $.split(ppt.custAlbumArtGrpFont, 1);
 			this.font.group = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 1, 0)));
-		} else this.font.group = this.font.main.Name.toLowerCase() == 'segoe ui' ? gdi.Font('Segoe UI Semibold', this.font.main.Size, 0) : gdi.Font(this.font.main.Name, this.font.main.Size, 1);
+		} else this.font.group = gdi.Font(this.font.main.Name, this.font.main.Size, 1)
 
 		if (ppt.custAlbumArtLotFontUse && ppt.custAlbumArtLotFont.length) {
 			const custFont = $.split(ppt.custAlbumArtLotFont, 1);
 			this.font.lot = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
-		} else this.font.lot = gdi.Font(this.font.main.Name, this.font.main.Size, 2);
+		} else this.font.lot = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
+		
+		if (ppt.custAlbumArtDurFontUse && ppt.custAlbumArtDurFont.length) {
+			const custFont = $.split(ppt.custAlbumArtDurFont, 1);
+			this.font.duration = gdi.Font(custFont[0], this.font.main.Size, Math.round($.value(custFont[1], 2, 0)));
+		} else this.font.duration = gdi.Font('Segoe UI Semibold', this.font.main.Size, 0);
 
 		this.calcText(true);
 	}
@@ -477,6 +497,23 @@ class UserInterface {
 	getGradient(c, f1, f2) {
 		c = $.toRGB(c);
 		return [RGB(Math.min(c[0] + f1, 255), Math.min(c[1] + f1, 255), Math.min(c[2] + f1, 255)), RGB(Math.max(c[0] + f2, 0), Math.max(c[1] + f2, 0), Math.max(c[2] + f2, 0))];
+	}
+
+	getImgAlpha(image) {
+		const colorSchemeArray = JSON.parse(image.GetColourSchemeJSON(15));
+		let rTot = 0;
+		let gTot = 0;
+		let bTot = 0;
+		let freqTot = 0;
+		colorSchemeArray.forEach(v => {
+			const col = $.toRGB(v.col);
+			rTot += col[0] ** 2 * v.freq;
+			gTot += col[1] ** 2 * v.freq;
+			bTot += col[2] ** 2 * v.freq;
+			freqTot += v.freq;
+		});
+		const avgCol = ($.clamp(Math.round(Math.sqrt(rTot / freqTot)), 0, 255) + $.clamp(Math.round(Math.sqrt(gTot / freqTot)), 0, 255) + $.clamp(Math.round(Math.sqrt(bTot / freqTot)), 0, 255)) / 3;
+		return $.clamp(avgCol * -0.32 +  128, 64, 128);
 	}
 
 	getImgFallback() {
@@ -493,7 +530,7 @@ class UserInterface {
 			this.col.txt_h = RGB(255, 255, 255);
 		}
 		if (this.img.blurLight) {
-			this.col.txt = RGB(0, 0, 0);
+			this.col.txt = RGB(50, 50, 50);
 			this.col.txt_h = RGB(71, 129, 183);
 		}
 
@@ -503,16 +540,17 @@ class UserInterface {
 		this.col.bg3 = lightBg ? 0x10000000 : 0x10ffffff;
 		this.col.bg4 = lightBg ? 0x1f000000 : 0x1fffffff;
 		this.col.bg5 = lightBg ? 0x00000000 : 0x00ffffff;
+		this.col.bg6 = this.img.blurDark ? RGB(64, 64, 64) : this.img.blurLight ? RGB(245, 245, 245) : this.col.bg == 0 ? 0xff000000 : this.col.bg
 
 		if (ppt.swapCol && (!ppt.albumArtShow || ppt.albumArtLabelType != 4)) {
 			const colH = this.col.text_h;
 			this.col.text_h = this.col.text;
 			this.col.text = colH;
 		}
-		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h : RGB(103, 240, 98);
+		if (this.col.nowp === '') this.col.nowp = !this.img.blurDark ? this.col.text_h : RGB(128, 228, 27);
 
 		if (this.col.bg_h === '') {
-			this.col.bg_h = ppt.highLightRow == 3 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
+			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
 			this.col.bgSel_h = this.col.bg_h;
 			if (this.getColSat(this.col.bg) < 150 && !this.img.blurDark && !this.img.blurLight && ppt.highLightRow != 3) {
 				this.col.bg_h = this.getBlend(this.col.bg == 0 ? 0xff000000 : this.col.bg, this.col.bgSel, 0.55);
@@ -523,6 +561,9 @@ class UserInterface {
 		if (this.col.bgSelframe === '') {
 			const bgSelOpaque = $.RGBAtoRGB(this.col.bgSel, this.img.blurDark ? RGB(50, 50, 50) : this.img.blurLight ? RGB(232, 232, 232) : this.col.bg);
 			this.col.bgSelframe = this.setBrightness(bgSelOpaque, this.getSelCol(bgSelOpaque == 0 ? 0xff000000 : bgSelOpaque, true) == 50 ? -7 : 7);
+			this.col.frameImgSel = this.col.bgSel & 0xb0ffffff;
+		} else {
+			this.col.frameImgSel = this.col.bgSelframe;
 		}
 
 		if (this.col.frame === '') {
@@ -546,7 +587,7 @@ class UserInterface {
 		this.col.imgBor = this.col.text & 0x25ffffff;
 		this.col.lotBlend = !this.img.blurDark && !this.img.blurLight ? this.getBlend(this.col.text, this.col.bg == 0 ? 0xff000000 : this.col.bg, 0.75) : this.col.text;
 		this.col.rootBlend = !this.img.blurDark && !this.img.blurLight ? this.getBlend(this.col.text, this.col.bg == 0 ? 0xff000000 : this.col.bg, 0.2) : RGBA(128, 128, 128, 128);
-		this.col.selBlend = this.getBlend(this.col.textSel, this.col.bgSel == 0 ? 0xff000000 : this.col.bgSel, 0.75);
+		this.col.selBlend = this.getBlend(this.col.textSel, this.col.bgSel == 0 ? 0xff000000 : this.col.bgSel, 0.85);
 
 
 		if (this.col.txt_box === '') {
@@ -569,8 +610,8 @@ class UserInterface {
 
 		if (this.id.local) {
 			this.col.topBarUnderlay = this.getAlpha(c_b1) != 255 ? RGB(25, 28, 30) : c_b1;
-			this.col.text = this.col.lotBlend = this.img.blurBlend ? this.setBrightness(c_textcol, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(0, 0, 0) : c_textcol;
-			this.col.text_h = this.img.blurBlend ? this.setBrightness(c_textcol_h, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(0, 0, 0) : c_textcol_h;
+			this.col.text = this.col.lotBlend = this.img.blurBlend ? this.setBrightness(c_textcol, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol;
+			this.col.text_h = this.img.blurBlend ? this.setBrightness(c_textcol_h, this.getSelCol(this.col.bg == 0 ? 0xff000000 : this.col.bg, true) == 50 ? -10 : 10) : this.img.blurDark ? RGB(255, 255, 255) : this.img.blurLight ? RGB(50, 50, 50) : c_textcol_h;
 			this.col.textSel = this.col.selBlend = c_textselcol;
 			this.col.bgSel = c_backcolsel;
 			ppt.rowStripes = c_alternate;
@@ -578,7 +619,7 @@ class UserInterface {
 			this.style.pen = c_pen;
 			this.style.pen_c = c_pen_c;
 			this.col.search = this.col.txt_box = c_txt_box;
-			this.col.bg_h = ppt.highLightRow == 3 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
+			this.col.bg_h = ppt.highLightRow > 2 ? (this.img.blurDark ? 0x24000000 : 0x1E30AFED) : this.img.blurDark ? 0x19ffffff : this.img.blurLight || lightBg ? 0x19000000 : 0x19ffffff;
 			this.col.bgSel_h = this.col.bg_h;
 			if (this.getColSat(this.col.bg) < 150 && !this.img.blurDark && !this.img.blurLight && !ppt.highLightRow != 3) {
 				this.col.bg_h = this.getBlend(this.col.bg == 0 ? 0xff000000 : this.col.bg, this.col.bgSel, 0.55);
@@ -594,13 +635,22 @@ class UserInterface {
 		this.icon.col_e = this.col.icon_e;
 		this.icon.col_h = this.col.icon_h;
 		this.setIconCol();
-		this.col.searchSel = window.IsTransparent || !this.col.bgSel ? 0xff0099ff : this.getContrast(this.col.search, this.col.bgSel) > 3 ? this.col.bgSel : this.getBlend(this.col.search, this.col.bg == 0 ? 0xff000000 : this.col.bg, 0.25);
+		this.col.searchSel = window.IsTransparent || !this.col.bgSel ? 0xff0099ff : this.getContrast(this.col.search, this.col.bgSel) > 3 ? this.col.bgSel : this.getBlend(this.col.search, this.col.bg == 0 || this.img.blurDark ? 0xff000000 : this.col.bg, 0.25);
 		this.sbar.col = this.img.blurDark || this.img.blurLight ? 1 : ppt.sbarCol;
 		this.col.txtArr = [this.col.text, this.col.text_h, this.col.textSel];
 	}
 
 	getOpaque() {
-		return ppt.fullLineSelection && (ppt.highLightRow == 3 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || ui.img.bg ? false : true;
+		return ppt.fullLineSelection && (ppt.highLightRow > 2 || ppt.sbarShow == 1) || !this.style.bg || this.img.isBlur || ui.img.bg ? false : true;
+	}
+
+	getRandomCol() {
+		const rc = () => {
+			return Math.floor(Math.random() * 256);
+		};
+		let c = [rc(), rc(), rc()];
+		while (!this.isColOk(c)) c = [rc(), rc(), rc()];
+		return $.RGBAtoRGB(RGBA(c[0], c[1], c[2], Math.min(80 / ui.img.blurAlpha, 255)), RGB(0, 0, 0));
 	}
 
 	getSelCol(c, n, value, bypass) {
@@ -625,13 +675,13 @@ class UserInterface {
 		switch (this.dui) {
 			case 0:
 				if (this.col.bg === '') this.col.bg = window.GetColourCUI(3);
-				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(0, 0, 0, 36) : window.GetColourCUI(4);
+				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourCUI(4);
 				this.col.txt = window.GetColourCUI(0);
 				this.col.txt_h = window.GetColourCUI(2);
 				break;
 			case 1:
 				if (this.col.bg === '') this.col.bg = window.GetColourDUI(1);
-				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(0, 0, 0, 36) : window.GetColourDUI(3);
+				if (this.col.bgSel === '') this.col.bgSel = this.img.blurDark ? RGBA(255, 255, 255, 36) : this.img.blurLight ? RGBA(50, 50, 50, 36) : window.GetColourDUI(3);
 				this.col.txt = window.GetColourDUI(0);
 				this.col.txt_h = window.GetColourDUI(2);
 				break;
@@ -648,7 +698,16 @@ class UserInterface {
 		img.sizeDebounce();
 	}
 
-	isImageDark(image) {
+	isColOk(c) {
+		const hsp = Math.sqrt(
+			0.299 * (c[0] * c[0]) +
+			0.587 * (c[1] * c[1]) +
+			0.114 * (c[2] * c[2])
+		);
+		return hsp > 55; // exclude too dark
+	}
+
+	isImageLight(image) {
 		const colorSchemeArray = $.jsonParse(image.GetColourSchemeJSON(15), []);
 		let rTot = 0;
 		let gTot = 0;
@@ -692,8 +751,9 @@ class UserInterface {
 	}
 
 	setIconCol() {
+		const colBg = this.img.blurDark ? RGB(0, 0, 0) : this.img.blurLight ? RGB(255, 255, 255) : this.col.bg == 0 ? 0xff000000 : this.col.bg
 		if (this.icon.col_c === '') {
-			this.col.icon_c = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : this.col.text;
+			this.col.icon_c = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : (ppt.nodeStyle == 1 || ppt.nodeStyle == 3 ? (this.img.blurDark || this.img.blurBlend ? this.getBlend(colBg, this.col.text, 0.3) : this.getBlend(colBg, this.col.text, 0.5)) : this.col.text);
 		} else if (this.style.squareNode) {
 			if (this.getAlpha(this.icon.col_c) != 255) {
 				this.col.icon_c = $.RGBAtoRGB(this.icon.col_c, this.col.bg);
@@ -701,7 +761,7 @@ class UserInterface {
 			this.col.icon_c = this.getGradient(this.col.icon_c, 15, -14);
 		}
 		if (this.icon.col_e === '') {
-			this.col.icon_e = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : this.col.text;
+			this.col.icon_e = this.style.squareNode ? [RGB(252, 252, 252), RGB(223, 223, 223)] : (ppt.nodeStyle == 1 || ppt.nodeStyle == 3 ? (this.img.blurDark || this.img.blurBlend ? this.col.text : this.getBlend(colBg, this.col.text, 0.1)) : this.col.text);
 		} else if (this.style.squareNode) {
 			if (this.getAlpha(this.icon.col_e) != 255) {
 				this.col.icon_e = $.RGBAtoRGB(this.icon.col_e, this.col.bg);
@@ -713,7 +773,8 @@ class UserInterface {
 		this.col.iconMinus_e = this.getSelCol(this.col.icon_e[0], true) == 50 ? RGB(75, 99, 167) : RGB(225, 225, 245);
 		if (!ppt.highLightNode) return;
 		if (this.icon.col_h === '') {
-			this.col.icon_h = this.style.squareNode ? !this.img.blurDark && !this.img.blurLight ? !this.id.local ? (this.getColSat(this.col.text_h) < 650 ? this.col.text_h : this.col.text) : (this.getColSat(c_iconcol_h) < 650 ? c_iconcol_h : c_textcol) : RGB(50, 50, 50) : this.col.text_h;
+			const nodeDiffHighlight = this.img.blurDark && !ppt.highLightRow && ppt.highLightNode;
+			this.col.icon_h = this.style.squareNode ? !this.img.blurDark && !this.img.blurLight ? !this.id.local ? (this.getColSat(this.col.text_h) < 650 ? this.col.text_h : this.col.text) : (this.getColSat(c_iconcol_h) < 650 ? c_iconcol_h : c_textcol) : RGB(50, 50, 50) : (nodeDiffHighlight ? this.col.nowp : this.col.text_h);
 			this.icon.col_h = this.col.icon_h;
 		}
 		if (this.style.squareNode) {
@@ -752,10 +813,10 @@ class UserInterface {
 	}
 
 	setNodes() {
-		if (!ppt.nodeStyle && ppt.winNode) ppt.nodeStyle = 5;
-		if (ppt.nodeStyle == 5 && !ppt.winNode) ppt.nodeStyle = 0;
-		ppt.nodeStyle = $.clamp(ppt.nodeStyle, 0, 5);
-		if (ppt.nodeStyle == 4) {
+		if (!ppt.nodeStyle && ppt.winNode) ppt.nodeStyle = 7;
+		if (ppt.nodeStyle == 7 && !ppt.winNode) ppt.nodeStyle = 0;
+		ppt.nodeStyle = $.clamp(ppt.nodeStyle, 0, 7);
+		if (ppt.nodeStyle == 6) {
 			this.icon.char = ppt.iconCustom;
 			if (!this.icon.char.charAt().length) ppt.nodeStyle = 0;
 			else {
@@ -767,7 +828,7 @@ class UserInterface {
 				} else ppt.nodeStyle = 0;
 			}
 		}
-		if (ppt.nodeStyle == 5) {
+		if (ppt.nodeStyle == 7) {
 			$.gr(this.sz.node, this.sz.node, false, g => {
 				try {
 					this.style.symb.SetPartAndStateID(2, 1);
@@ -778,14 +839,19 @@ class UserInterface {
 				}
 			});
 		}
-		if (ppt.nodeStyle && ppt.nodeStyle < 4) {
-			this.icon.expand = '\uF105';
-			this.icon.expand2 = '\uF0DA';
-			this.icon.collapse = '\uF107';
+		if (ppt.nodeStyle) {
+			if (ppt.nodeStyle < 5) {
+				this.icon.expand = '\uF105';
+				this.icon.expand2 = '\uF0DA';
+				this.icon.collapse = '\uF107';
+			} else if (ppt.nodeStyle == 5) {
+				this.icon.expand = '\u002B';
+				this.icon.collapse = '\u002D';
+			}
 		}
-		if (ppt.nodeStyle != 5 && (!this.icon.expand.length || !this.icon.collapse.length)) ppt.nodeStyle = 0;
-		this.style.squareNode = !ppt.nodeStyle || ppt.nodeStyle == 5;
-		if (!ppt.custIconFont.length || ppt.nodeStyle != 4) this.icon.fontName = 'FontAwesome';
+		if (ppt.nodeStyle != 7 && (!this.icon.expand.length || !this.icon.collapse.length)) ppt.nodeStyle = 0;
+		this.style.squareNode = !ppt.nodeStyle || ppt.nodeStyle == 7;
+		if (!ppt.custIconFont.length || ppt.nodeStyle != 6) this.icon.fontName = ppt.nodeStyle != 5 ? 'FontAwesome' : 'Consolas';
 		else {
 			this.icon.fontName = ppt.custIconFont;
 			this.icon.fontStyle = 0;
@@ -972,4 +1038,4 @@ class Vkeys {
 	}
 }
 
-(function(root,pluralize){root.pluralize=pluralize()})(this,function(){var pluralRules=[];var singularRules=[];var uncountables={};var irregularPlurals={};var irregularSingles={};function sanitizeRule(rule){if(typeof rule==='string'){return new RegExp('^'+rule+'$','i')}return rule}function restoreCase(word,token){if(word===token)return token;if(word===word.toLowerCase())return token.toLowerCase();if(word===word.toUpperCase())return token.toUpperCase();if(word[0]===word[0].toUpperCase()){return token.charAt(0).toUpperCase()+token.substr(1).toLowerCase()}return token.toLowerCase()}function interpolate(str,args){return str.replace(/\$(\d{1,2})/g,function(match,index){return args[index]||''})}function replace(word,rule){return word.replace(rule[0],function(match,index){var result=interpolate(rule[1],arguments);if(match===''){return restoreCase(word[index-1],result)}return restoreCase(match,result)})}function sanitizeWord(token,word,rules){if(!token.length||$.objHasOwnProperty(uncountables, token)){return word}var len=rules.length;while(len--){var rule=rules[len];if(rule[0].test(word))return replace(word,rule)}return word}function replaceWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token)){return restoreCase(word,token)}if($.objHasOwnProperty(replaceMap, token)){return restoreCase(word,replaceMap[token])}return sanitizeWord(token,word,rules)}}function checkWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token))return true;if($.objHasOwnProperty(replaceMap, token))return false;return sanitizeWord(token,token,rules)===token}}function pluralize(word,count,inclusive){if (word.length < 2) return word;var pluralized=count===1?pluralize.singular(word):pluralize.plural(word);return(inclusive?count+' ':'')+pluralized}pluralize.plural=replaceWord(irregularSingles,irregularPlurals,pluralRules);pluralize.isPlural=checkWord(irregularSingles,irregularPlurals,pluralRules);pluralize.singular=replaceWord(irregularPlurals,irregularSingles,singularRules);pluralize.isSingular=checkWord(irregularPlurals,irregularSingles,singularRules);pluralize.addPluralRule=function(rule,replacement){pluralRules.push([sanitizeRule(rule),replacement])};pluralize.addSingularRule=function(rule,replacement){singularRules.push([sanitizeRule(rule),replacement])};pluralize.addUncountableRule=function(word){if(typeof word==='string'){uncountables[word.toLowerCase()]=true;return}pluralize.addPluralRule(word,'$0');pluralize.addSingularRule(word,'$0')};pluralize.addIrregularRule=function(single,plural){plural=plural.toLowerCase();single=single.toLowerCase();irregularSingles[single]=plural;irregularPlurals[plural]=single};[['I','we'],['me','us'],['he','they'],['she','they'],['them','them'],['myself','ourselves'],['yourself','yourselves'],['itself','themselves'],['herself','themselves'],['himself','themselves'],['themself','themselves'],['is','are'],['was','were'],['has','have'],['this','these'],['that','those'],['echo','echoes'],['dingo','dingoes'],['volcano','volcanoes'],['tornado','tornadoes'],['torpedo','torpedoes'],['genus','genera'],['viscus','viscera'],['stigma','stigmata'],['stoma','stomata'],['dogma','dogmata'],['lemma','lemmata'],['schema','schemata'],['anathema','anathemata'],['ox','oxen'],['axe','axes'],['die','dice'],['yes','yeses'],['foot','feet'],['eave','eaves'],['goose','geese'],['tooth','teeth'],['quiz','quizzes'],['human','humans'],['proof','proofs'],['carve','carves'],['valve','valves'],['looey','looies'],['thief','thieves'],['groove','grooves'],['pickaxe','pickaxes'],['passerby','passersby']].forEach(function(rule){return pluralize.addIrregularRule(rule[0],rule[1])});[[/s?$/i,'s'],[/[^\u0000-\u007F]$/i,'$0'],[/([^aeiou]ese)$/i,'$1'],[/(ax|test)is$/i,'$1es'],[/(alias|[^aou]us|t[lm]as|gas|ris)$/i,'$1es'],[/(e[mn]u)s?$/i,'$1s'],[/([^l]ias|[aeiou]las|[ejzr]as|[iu]am)$/i,'$1'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1i'],[/(alumn|alg|vertebr)(?:a|ae)$/i,'$1ae'],[/(seraph|cherub)(?:im)?$/i,'$1im'],[/(her|at|gr)o$/i,'$1oes'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$/i,'$1a'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$/i,'$1a'],[/sis$/i,'ses'],[/(?:(kni|wi|li)fe|(ar|l|ea|eo|oa|hoo)f)$/i,'$1$2ves'],[/([^aeiouy]|qu)y$/i,'$1ies'],[/([^ch][ieo][ln])ey$/i,'$1ies'],[/(x|ch|ss|sh|zz)$/i,'$1es'],[/(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$/i,'$1ices'],[/\b((?:tit)?m|l)(?:ice|ouse)$/i,'$1ice'],[/(pe)(?:rson|ople)$/i,'$1ople'],[/(child)(?:ren)?$/i,'$1ren'],[/eaux$/i,'$0'],[/m[ae]n$/i,'men'],['thou','you']].forEach(function(rule){return pluralize.addPluralRule(rule[0],rule[1])});[[/s$/i,''],[/(ss)$/i,'$1'],[/(wi|kni|(?:after|half|high|low|mid|non|night|[^\w]|^)li)ves$/i,'$1fe'],[/(ar|(?:wo|[ae])l|[eo][ao])ves$/i,'$1f'],[/ies$/i,'y'],[/\b([pl]|zomb|(?:neck|cross)?t|coll|faer|food|gen|goon|group|lass|talk|goal|cut)ies$/i,'$1ie'],[/\b(mon|smil)ies$/i,'$1ey'],[/\b((?:tit)?m|l)ice$/i,'$1ouse'],[/(seraph|cherub)im$/i,'$1'],[/(x|ch|ss|sh|zz|tto|go|cho|alias|[^aou]us|t[lm]as|gas|(?:her|at|gr)o|[aeiou]ris)(?:es)?$/i,'$1'],[/(analy|diagno|parenthe|progno|synop|the|empha|cri|ne)(?:sis|ses)$/i,'$1sis'],[/(movie|twelve|abuse|e[mn]u)s$/i,'$1'],[/(test)(?:is|es)$/i,'$1is'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1us'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|quor)a$/i,'$1um'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)a$/i,'$1on'],[/(alumn|alg|vertebr)ae$/i,'$1a'],[/(cod|mur|sil|vert|ind)ices$/i,'$1ex'],[/(matr|append)ices$/i,'$1ix'],[/(pe)(rson|ople)$/i,'$1rson'],[/(child)ren$/i,'$1'],[/(eau)x?$/i,'$1'],[/men$/i,'man']].forEach(function(rule){return pluralize.addSingularRule(rule[0],rule[1])});['a','an','and','as','at','but','by','en','for','if','in','nor','of','on','or','per','the','to','vs','via','adulthood','advice','agenda','aid','aircraft','alcohol','allmusic','ammo','analytics','anime','athletics','audio','bison','blood','bream','buffalo','butter','carp','cash','chassis','chess','clothing','cod','commerce','cooperation','corps','debris','diabetes','digestion','elk','energy','equipment','excretion','expertise','firmware','flounder','folder','fun','gallows','garbage','graffiti','hardware','headquarters','health','herpes','highjinks','homework','housework','information','jeans','justice','kudos','labour','lastfm','last.fm','literature','machinery','mackerel','mail','media','mews','moose','music','mud','manga','news','only','personnel','pike','plankton','pliers','police','pollution','premises','rain','research','rice','salmon','scissors','series','sewage','shambles','shrimp','similar','software','species','staff','swine','tennis','traffic','transportation','trout','tuna','wealth','welfare','whiting','wildebeest','wildlife','you',/pok[eé]mon$/i,/[^aeiou]ese$/i,/deer$/i,/fish$/i,/measles$/i,/o[iu]s$/i,/pox$/i,/sheep$/i].forEach(pluralize.addUncountableRule);return pluralize});
+(function(root,pluralize){root.pluralize=pluralize()})(this,function(){var pluralRules=[];var singularRules=[];var uncountables={};var irregularPlurals={};var irregularSingles={};function sanitizeRule(rule){if(typeof rule==='string'){return new RegExp('^'+rule+'$','i')}return rule}function restoreCase(word,token){if(word===token)return token;if(word===word.toLowerCase())return token.toLowerCase();if(word===word.toUpperCase())return token.toUpperCase();if(word[0]===word[0].toUpperCase()){return token.charAt(0).toUpperCase()+token.substr(1).toLowerCase()}return token.toLowerCase()}function interpolate(str,args){return str.replace(/\$(\d{1,2})/g,function(match,index){return args[index]||''})}function replace(word,rule){return word.replace(rule[0],function(match,index){var result=interpolate(rule[1],arguments);if(match===''){return restoreCase(word[index-1],result)}return restoreCase(match,result)})}function sanitizeWord(token,word,rules){if(!token.length||$.objHasOwnProperty(uncountables, token)){return word}var len=rules.length;while(len--){var rule=rules[len];if(rule[0].test(word))return replace(word,rule)}return word}function replaceWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token)){return restoreCase(word,token)}if($.objHasOwnProperty(replaceMap, token)){return restoreCase(word,replaceMap[token])}return sanitizeWord(token,word,rules)}}function checkWord(replaceMap,keepMap,rules){return function(word){var token=word.toLowerCase();if($.objHasOwnProperty(keepMap, token))return true;if($.objHasOwnProperty(replaceMap, token))return false;return sanitizeWord(token,token,rules)===token}}function pluralize(word,count,inclusive){if (word.length < 2) return word;var pluralized=count===1?pluralize.singular(word):pluralize.plural(word);return(inclusive?count+' ':'')+pluralized}pluralize.plural=replaceWord(irregularSingles,irregularPlurals,pluralRules);pluralize.isPlural=checkWord(irregularSingles,irregularPlurals,pluralRules);pluralize.singular=replaceWord(irregularPlurals,irregularSingles,singularRules);pluralize.isSingular=checkWord(irregularPlurals,irregularSingles,singularRules);pluralize.addPluralRule=function(rule,replacement){pluralRules.push([sanitizeRule(rule),replacement])};pluralize.addSingularRule=function(rule,replacement){singularRules.push([sanitizeRule(rule),replacement])};pluralize.addUncountableRule=function(word){if(typeof word==='string'){uncountables[word.toLowerCase()]=true;return}pluralize.addPluralRule(word,'$0');pluralize.addSingularRule(word,'$0')};pluralize.addIrregularRule=function(single,plural){plural=plural.toLowerCase();single=single.toLowerCase();irregularSingles[single]=plural;irregularPlurals[plural]=single};[['I','we'],['me','us'],['he','they'],['she','they'],['them','them'],['myself','ourselves'],['yourself','yourselves'],['itself','themselves'],['herself','themselves'],['himself','themselves'],['themself','themselves'],['is','are'],['was','were'],['has','have'],['this','these'],['that','those'],['echo','echoes'],['dingo','dingoes'],['volcano','volcanoes'],['tornado','tornadoes'],['torpedo','torpedoes'],['genus','genera'],['viscus','viscera'],['stigma','stigmata'],['stoma','stomata'],['dogma','dogmata'],['lemma','lemmata'],['schema','schemata'],['anathema','anathemata'],['ox','oxen'],['axe','axes'],['die','dice'],['yes','yeses'],['foot','feet'],['eave','eaves'],['goose','geese'],['tooth','teeth'],['quiz','quizzes'],['human','humans'],['proof','proofs'],['carve','carves'],['valve','valves'],['looey','looies'],['thief','thieves'],['groove','grooves'],['pickaxe','pickaxes'],['passerby','passersby']].forEach(function(rule){return pluralize.addIrregularRule(rule[0],rule[1])});[[/s?$/i,'s'],[/[^\u0000-\u007F]$/i,'$0'],[/([^aeiou]ese)$/i,'$1'],[/(ax|test)is$/i,'$1es'],[/(alias|[^aou]us|t[lm]as|gas|ris)$/i,'$1es'],[/(e[mn]u)s?$/i,'$1s'],[/([^l]ias|[aeiou]las|[ejzr]as|[iu]am)$/i,'$1'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1i'],[/(alumn|alg|vertebr)(?:a|ae)$/i,'$1ae'],[/(seraph|cherub)(?:im)?$/i,'$1im'],[/(her|at|gr)o$/i,'$1oes'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|automat|quor)(?:a|um)$/i,'$1a'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)(?:a|on)$/i,'$1a'],[/sis$/i,'ses'],[/(?:(kni|wi|li)fe|(ar|l|ea|eo|oa|hoo)f)$/i,'$1$2ves'],[/([^aeiouy]|qu)y$/i,'$1ies'],[/([^ch][ieo][ln])ey$/i,'$1ies'],[/(x|ch|ss|sh|zz)$/i,'$1es'],[/(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$/i,'$1ices'],[/\b((?:tit)?m|l)(?:ice|ouse)$/i,'$1ice'],[/(pe)(?:rson|ople)$/i,'$1ople'],[/(child)(?:ren)?$/i,'$1ren'],[/eaux$/i,'$0'],[/m[ae]n$/i,'men'],['thou','you']].forEach(function(rule){return pluralize.addPluralRule(rule[0],rule[1])});[[/s$/i,''],[/(ss)$/i,'$1'],[/(wi|kni|(?:after|half|high|low|mid|non|night|[^\w]|^)li)ves$/i,'$1fe'],[/(ar|(?:wo|[ae])l|[eo][ao])ves$/i,'$1f'],[/ies$/i,'y'],[/\b([pl]|zomb|(?:neck|cross)?t|coll|faer|food|gen|goon|group|lass|talk|goal|cut)ies$/i,'$1ie'],[/\b(mon|smil)ies$/i,'$1ey'],[/\b((?:tit)?m|l)ice$/i,'$1ouse'],[/(seraph|cherub)im$/i,'$1'],[/(x|ch|ss|sh|zz|tto|go|cho|alias|[^aou]us|t[lm]as|gas|(?:her|at|gr)o|[aeiou]ris)(?:es)?$/i,'$1'],[/(analy|diagno|parenthe|progno|synop|the|empha|cri|ne)(?:sis|ses)$/i,'$1sis'],[/(movie|twelve|abuse|e[mn]u)s$/i,'$1'],[/(test)(?:is|es)$/i,'$1is'],[/(alumn|syllab|vir|radi|nucle|fung|cact|stimul|termin|bacill|foc|uter|loc|strat)(?:us|i)$/i,'$1us'],[/(agend|addend|millenni|dat|extrem|bacteri|desiderat|strat|candelabr|errat|ov|symposi|curricul|quor)a$/i,'$1um'],[/(apheli|hyperbat|periheli|asyndet|noumen|phenomen|criteri|organ|prolegomen|hedr|automat)a$/i,'$1on'],[/(alumn|alg|vertebr)ae$/i,'$1a'],[/(cod|mur|sil|vert|ind)ices$/i,'$1ex'],[/(matr|append)ices$/i,'$1ix'],[/(pe)(rson|ople)$/i,'$1rson'],[/(child)ren$/i,'$1'],[/(eau)x?$/i,'$1'],[/men$/i,'man']].forEach(function(rule){return pluralize.addSingularRule(rule[0],rule[1])});['a','an','and','as','at','but','by','en','for','if','in','nor','of','on','or','per','the','to','vs','via','adulthood','advice','agenda','aid','aircraft','alcohol','allmusic','ammo','analytics','anime','athletics','audio','bison','blood','bream','buffalo','butter','carp','cash','chassis','chess','clothing','cod','commerce','cooperation','corps','debris','diabetes','digestion','elk','energy','equipment','excretion','expertise','firmware','flounder','folder','fun','gallows','garbage','graffiti','hardware','headquarters','health','herpes','highjinks','homework','housework','information','jeans','justice','kudos','labour','lastfm','last.fm','listener','literature','machinery','mackerel','mail','media','mews','moose','music','mud','manga','news','only','personnel','pike','plankton','playcount','pliers','police','pollution','premises','rain','research','rice','salmon','scissors','series','sewage','shambles','shrimp','similar','software','species','staff','swine','tennis','traffic','transportation','trout','tuna','wealth','welfare','whiting','wildebeest','wildlife','wikipedia','you',/pok[eé]mon$/i,/[^aeiou]ese$/i,/deer$/i,/fish$/i,/measles$/i,/o[iu]s$/i,/pox$/i,/sheep$/i].forEach(pluralize.addUncountableRule);return pluralize});

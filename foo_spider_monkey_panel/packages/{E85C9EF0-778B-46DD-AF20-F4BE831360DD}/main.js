@@ -31,11 +31,11 @@ const files = [
 ];
 
 if (loadAsync) {
-readFiles(files).then(() => {
-	if (!window.ID) return; // fix pss issue
-	on_size();
-	window.Repaint();
-});
+	readFiles(files).then(() => {
+		if (!window.ID) return; // fix pss issue
+		on_size();
+		window.Repaint();
+	});
 } else {
 	files.forEach(v => include(my_utils.getScriptPath + v));
 }

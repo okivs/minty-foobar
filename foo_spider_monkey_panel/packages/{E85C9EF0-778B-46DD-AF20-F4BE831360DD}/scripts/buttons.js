@@ -1,4 +1,6 @@
-﻿class Buttons {
+﻿'use strict';
+
+class Buttons {
 	constructor() {
 		this.alpha = 255;
 		this.arc = 1;

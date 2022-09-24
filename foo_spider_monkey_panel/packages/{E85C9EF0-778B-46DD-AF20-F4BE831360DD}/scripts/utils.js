@@ -1,4 +1,6 @@
-﻿let my_utils = {}
+﻿'use strict';
+
+let my_utils = {}
 
 my_utils.scriptInfo = window.ScriptInfo;
 my_utils.packageInfo = utils.GetPackageInfo(my_utils.scriptInfo.PackageId);

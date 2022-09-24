@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 	<html>
 	<head>
 
@@ -46,6 +46,7 @@
 	.input_cnt3 {padding-top:0.7em;}
 	.input_cnt4 {padding-bottom:0.44em;}
 	.input3 {width:3em;}
+	.input7 {width:7.5%;}
 	.input15 {width:15%;}
 	.input21 {display:inline-block; vertical-align:middle; width:21%; margin-left:2%; margin-right:0;}
 	.input35 {display:inline-block; vertical-align:middle; width:35%; margin-bottom:0.31em;}
@@ -76,11 +77,11 @@
 	}
 
 	.dropbtn {white-space:nowrap; width:100%; background-color:#3e8e41; color:white; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
-	.dropbtnLight {white-space:nowrap; width:100%; background-color::#E8E8E8; color:black; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
+	.dropbtnLight {white-space:nowrap; width:100%; color:black; text-decoration:none; padding:0.13em 5px; border:none; cursor:pointer;}
 	.dropbtn:after {font-family: FontAwesome; content: "\f107"; padding-left:0.5em; padding-right:0.19em;}
 	.dropbtnLight:after {font-family: FontAwesome; content: "\f107"; padding-left:0.5em; padding-right:0.19em;}
 	.dropdown {margin-top: 10px; position:static; display:inline-block;}
-	.dropdown-content {display:none; position:absolute; background-color:#f9f9f9; min-width:160px; box-shadow:0 8px 1.01em 0 rgba(0,0,0,0.2); z-index:1;}
+	.dropdown-content {display:none; position:absolute; background-color:#f9f9f9; min-width:10em; white-space:nowrap; box-shadow:0 8px 1.01em 0 rgba(0,0,0,0.2); z-index:1;}
 	.dropdown-content a {padding:0.13em 5px; color:black; text-decoration:none; display:block;}
 	.dropdown-content a:hover {background-color:#f1f1f1;}
 	.dropdown .dropdown-content {display:none;}
@@ -288,7 +289,7 @@ Selected items will be displayed in the menu.
 			<div class="column33">		
 				<div class="div_text1">Top bar</b></div>
 				<div id="bar"></div>
-				<div style="padding-right:10%;" class="info4"><i>*If hidden, right click over filter or icon. If all hidden, use menu.</i></div>
+				<div style="padding-right:10%;" class="info4"><i>*If hidden, right click over filter or icon. If all hidden, use context menu.</i></div>
 				<div class="div_text2">Theme</div>
 				<span class="dropdown"><a id="theme_dropdown" class="dropbtn" href="#" onclick="toggle('themeBg');"></a>
 				<span id="themeBg" class="dropdown-content"></span>
@@ -308,13 +309,12 @@ Selected items will be displayed in the menu.
 				<span id="node" class="dropdown-content"></span>
 				</span>
 				<div id="nodeLines" style="padding-top:0.5em;"></div>
-				<div class="div_text2">Item counts</div>
+				<div class="div_text2">Item counts and duration</div>
 				<span class="dropdown"><a id="itemCounts_dropdown" class="dropbtn" href="#" onclick="toggle('itemCounts');"></a>
 				<span id="itemCounts" class="dropdown-content"></span>
 				</span>
 				<div id="countsRight" style="padding-top:0.5em;"></div>
-				<div class="info5">
-<i>For best preview of nodes on 'Apply', display an expanded branch.</i></div>
+				<div class="info5"><i>For best preview of nodes on 'Apply', display an expanded branch</i></div>
 			</div>
 					
 			<div class="column33">
@@ -322,6 +322,7 @@ Selected items will be displayed in the menu.
 				<span class="dropdown"><a id="showHl_dropdown" class="dropbtn" href="#" onclick="toggle('showHl');"></a>
 				<span id="showHl" class="dropdown-content"></span>
 				</span>
+				<div id="frameStyle" style="padding-top:0.5em;"></div>
 				<div class="div_text2">Hover effect (foreground)</div>
 				<div id="showH2"></div>
 				<div class="div_text2">Show</div>
@@ -335,6 +336,7 @@ Selected items will be displayed in the menu.
 				<div id="metrics2"></div>
 				</div>
 				</div>
+				<div id="metrics3"></div>
 			</div>
 		</div>
 		</div>
@@ -380,6 +382,8 @@ Selected items will be displayed in the menu.
 				<div id="sameAsTree"></div>
 			</div>
 			</div>
+				<div class="div_text2">Index</div>
+				<div id="indexLetter"></div>
 			</div>
 
 			<div class="column41">
@@ -399,11 +403,13 @@ Selected items will be displayed in the menu.
 			<div id="help_text" style="display: none;">
 			<div class="info5"><b>Cache</b></div>
 			<div class="info5">
-Enable the disk cache for best performance. It contains resized images that facilitate faster loading and is built as images are initially loaded. Optimum performance will be achieved when the cache is fully built. If new images are obtained or images replaced, the cache copy can be refreshed from the refresh context menu item.</div>
-			<div class="info5"><b>Image and text size</b></div><div class="info5"><ul><li>Image size: hold Ctrl+Alt+<i>Shift</i> & rotate the mouse wheel</li><li>Text and image size: hold Ctrl+Alt & rotate the mouse wheel</li><li>List style: set labels right and reduce image size as required (Quick Setup uses small size)</li><li>Flow mode operates in a single column or row (labels right & size options not available)</li></ul></div>
+Enable the disk cache for best performance. It contains resized images that facilitate faster loading and is built as images are initially loaded. Optimum performance will be achieved when the cache is fully built. If new images are obtained or images replaced, the cache copy can be refreshed from the refresh context menu item.
+
+Optionally cached images can be preloaded in the background. Preloading completes shortly after initialisation. After that images should always show immediately on scrolling, subject to memory available.</div>
+			<div class="info5"><b>Image and text size</b></div><div class="info5"><ul><li>Image size: hold Ctrl+Alt+<i>Shift</i> & rotate the mouse wheel</li><li>Text and image size: hold Ctrl+Alt & rotate the mouse wheel</li><li>Flow mode operates in a single column or row (labels right & size options not available)</li></ul></div>
 			<div class="info5"><b>Image sources</b></div>
 			<div class="info5">Album art is loaded from the file sources defined at Preferences: Display, and embedded images. Stub images are set above.
-Artist photos: if biography is used to obtain photos, the following pattern can be entered:</div>
+Artist photos: if biography is used to obtain photos, the pattern below can be entered. To get ...*YOUR PATH*..., use biography > sources > open file location > image. Copy the part required from the windows explorer address bar.</div>
 			<div id="photoPath"></div>
 			<div class="info5"><b>Views</b></div>
 			<div class="info5">Any view can be used. The image loaded is that of the <i>first item in the group</i>, according to the type set (front cover, artist etc). Views starting with something like <i>%artist%|%album%... or %album artist%|%album%...</i> work well. Always use a full pattern so tracks etc sort properly. By default the number of group levels is automatically determined. Use of the same view for the tree and album art makes toggling between the two more straightforward. Since only one copy of the library is kept in memory, a library reload is also avoided.</div>
@@ -705,20 +711,22 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var clickLabels = ['Select', 'Send to playlist', 'Send to playlist & play', 'Send to playlist & play [add if playing]'];
 				var colourLabels = ['Text', 'Text highlight', 'Text selection', 'Text nowplaying highlight', 'Text search', 'Buttons', 'Background', 'Background accent', 'Background selection', 'Frame hover', 'Frame selection', 'Item counts', 'Node collapse', 'Node expand', 'Node hover', 'Node lines', 'Separators', 'Side marker', 'Transparent fill'];
 				var coverFormatLabels = ['Cover auto-fill', 'Cover opacity (%)'];
-				var cusNodeLabels = ['Custom icon expand|collapse', 'Custom icon font name', 'Custom icon offset (%)', 'Square nodes: use windows'];
+				var cusNodeLabels = ['Custom icon expand|collapse', 'Custom icon font name', 'Custom icon padding (+/-)', 'Square nodes: use windows'];
 				var cusScrollLabels = ['Step (0 = page)', 'Smooth duration max (ms)', 'Touch duration max (ms)', 'Touch sensitivity 0-10'];
 				var dblClickLabels = ['Send to playlist', 'Send to playlist & play', 'Expand / collapse (tree)'];
+				var diskCacheLabels = ['Enable', 'Preload cached images']
 				var followCurrentLabels = ['Standard mode', 'Flow mode'];
-				var fontLabels = ['Main', 'Album art line 1', 'Album art line 2'];
-				var highLightLabels = ['None', 'Side marker', 'Accent', 'Frame', 'Highlight nodes', 'Highlight text'];
+				var fontLabels = ['Main', 'Album art group line 1', 'Album art group line 2', 'Album art duration line'];
+				var highLightLabels = ['None', 'Side marker', 'Accent', 'Frame', 'Always pointer (no hand)', 'Highlight nodes', 'Highlight text'];
+				//var indexLetterLabels = ['Show on scrollbar drag', 'Default number of characters', 'Show 4 digits if leading %date% detected'];
 				var keystrokeLabels = ['Select', 'Send to playlist']
-				var itemCountsLabels = ['Hide', '# Tracks', '# Sub-items', 'Align right'];
-				var metricsLabels = ['Margin', 'Tree indent', 'Line padding tree', 'Line padding album art'];
-				var nodeLabels = [ppt['winNode_internal'].value == 0 ? 'Squares' : 'Squares (windows)', 'Arrows', 'Angles', 'Triangles', 'Custom', 'Show lines (squares only)'];
+				var itemCountsLabels = ['Hide', '# Tracks', '# Sub-items', 'Align right (tree)', 'Show duration'];
+				var metricsLabels = ['Margin', 'Tree indent', 'Line padding tree', 'Line padding album art', 'Side marker width (0 = auto)'];
+				var nodeLabels = ['Squares', 'Arrows', 'Arrows Light', 'Triangles', 'Triangles Light', 'Signs', 'Custom'];
 				var playlistLabels = ['Default', 'Activate when changed'];
 				var playlistSortLabels = ['Playlist sort order (empty = default)'];				
 				var rememberLabels = ['On exit', 'All views'];
-				var rootLabels = ['Hide', 'All Music', 'View name', 'Summary item', 'Display in line (tree)', 'Show image (album art)'];
+				var rootLabels = ['Hide', 'All Music', 'View name', 'Summary item', 'Display in line (tree)', 'Show source'];
 				var sbarColLabels = ['Grey', 'Blend'];
 				var sbarIconLabels = ['Arrows', 'Triangles', 'Custom'];
 				var sbarShowLabels = ['Hide', 'Auto', 'Show'];
@@ -729,13 +737,19 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var searchLabels = ['Search only', 'Send results to playlist on enter','Auto-send results to playlist', 'Require enter to search'];
 				var showLabels = ['Row stripes', 'Nowplaying in highlight', 'Album art options', 'List view (tree)', 'Tracks (tree)'];				
 				var tfInput = ['Library View'];
-				var themeLabels = ['User interface', 'Dark', 'Blend', 'Light', 'Cover', 'Swap colours'];
+				var themeLabels = ['User interface', 'Dark', 'Blend', 'Light', 'Random', 'Cover', 'Swap colours'];
 				var themeBlurLabels = ['Auto-fill', 'Level (%)', 'Opacity (%)', '%'];
 				var thumbNailGapLabels = ['Thumbnail gap'];
-				var thumbnailSizeLabels = ['Small', 'Regular', 'Medium', 'Large'];
+				var thumbnailSizeLabels = ['Mini', 'Small', 'Regular', 'Medium', 'Large'];
 				var treeLabels = ['Auto-collapse', 'Expand single items', 'Expand if # tracks less than:'];	
 				var loadLabels = ['Auto-sync with library changes', 'Prefixes to strip or swap (| separator)']
 				var modeLabels = ['Max height', 'Min height', 'Limit menu expand: 10-6000'];
+				
+				function setNodeLabels() {
+					nodeLabels[0] = !ppt['winNode_internal'].value ? 'Squares' : 'Squares (windows)';
+					if (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 7) window.node_dropdown.innerHTML = nodeLabels[0];
+					window.nodeNo0.innerHTML = nodeLabels[0];
+				}
 
 				var input = {
 					behaviour: {
@@ -743,8 +757,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 						type: ['int', 'text', 'text']
 					},
 					display: {
-						name: ['covAlpha', 'margin', 'treeIndent', 'verticalPad', 'verticalAlbumArtPad'],
-						type: ['float', 'int', 'int', 'int', 'int']
+						name: ['covAlpha', 'margin', 'treeIndent', 'verticalPad', 'verticalAlbumArtPad', 'sideMarkerWidth'],
+						type: ['float', 'int', 'int', 'int', 'int', 'int']
 						
 					},
 					albumArt: {
@@ -752,8 +766,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 						type: ['int', 'int']
 					},
 					custom: {
-						name: ['custFont', 'custAlbumArtGrpFont', 'custAlbumArtLotFont', 'text', 'text_h', 'textSel', 'nowp', 'search', 'txt_box', 'bg', 'bg_h', 'bgSel', 'frame', 'bgSelframe', 'counts', 'icon_c', 'icon_e', 'icon_h', 'line', 's_line', 'sideMarker', 'bgTrans'],
-						type : ['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text']
+						name: ['custFont', 'custAlbumArtGrpFont', 'custAlbumArtLotFont', 'custAlbumArtDurFont', 'text', 'text_h', 'textSel', 'nowp', 'search', 'txt_box', 'bg', 'bg_h', 'bgSel', 'frame', 'bgSelframe', 'counts', 'icon_c', 'icon_e', 'icon_h', 'line', 's_line', 'sideMarker', 'bgTrans'],
+						type : ['text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text', 'text']
 					},
 					advanced: {
 						name: ['scrollStep', 'durationScroll', 'durationTouchFlick', 'flickDistance', 'sbarWidth', 'narrowSbarWidth', 'sbarArrowWidth', 'sbarPad', 'sbarGripHeight', 'arrowSymbol', 'butCustIconFont', 'sbarButPad', 'iconCustom', 'custIconFont', 'iconVerticalPad', 'blurTemp', 'blurAlpha','prefix', 'pn_h_max', 'pn_h_min', 'treeExpandLimit'],
@@ -765,9 +779,9 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				input.all.type = input.behaviour.type.concat(input.display.type, input.albumArt.type, input.custom.type, input.advanced.type);
 				var box = {
 					behaviour: ['fullLineSelection', 'autoPlay', 'sbarWinMetrics', 'smooth', 'touchControl', 'searchEnter', 'autoCollapse', 'treeAutoExpandSingle', 'treeAutoExpand', 'rememberTree', 'rememberView', 'activateOnChange'],
-					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'nodeLines', 'countsRight', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
-					albumArt: ['albumArtFlipLabels', 'stndModeFollowSelection', 'flowModeFollowSelection', 'albumArtDiskCache', 'albumArtFlowMode', 'artTreeSameView'],
-					custom: ['custFontUse', 'custAlbumArtGrpFontUse', 'custAlbumArtLotFontUse', 'textUse', 'text_hUse', 'textSelUse', 'nowpUse', 'searchUse', 'txt_boxUse', 'bgUse', 'bg_hUse', 'bgSelUse', 'frameUse', 'bgSelframeUse', 'countsUse', 'icon_cUse', 'icon_eUse', 'icon_hUse', 'lineUse', 's_lineUse', 'sideMarkerUse', 'bgTransUse'],
+					display: ['searchShow', 'filterShow', 'settingsShow', 'swapCol', 'autoFill', 'inlineRoot', 'showSource', 'nodeLines', 'countsRight', 'itemShowDuration', 'frameImage', 'mousePointerOnly', 'highLightNode', 'highLightText', 'rowStripes', 'highLightNowplaying', 'albumArtOptionsShow', 'treeListView', 'showTracks'],
+					albumArt: ['albumArtFlipLabels', 'stndModeFollowSelection', 'flowModeFollowSelection', 'albumArtDiskCache', 'albumArtPreLoad', 'albumArtFlowMode', 'artTreeSameView', 'albumArtLetter'],
+					custom: ['custFontUse', 'custAlbumArtGrpFontUse', 'custAlbumArtLotFontUse', 'custAlbumArtDurFontUse', 'textUse', 'text_hUse', 'textSelUse', 'nowpUse', 'searchUse', 'txt_boxUse', 'bgUse', 'bg_hUse', 'bgSelUse', 'frameUse', 'bgSelframeUse', 'countsUse', 'icon_cUse', 'icon_eUse', 'icon_hUse', 'lineUse', 's_lineUse', 'sideMarkerUse', 'bgTransUse'],
 					advanced: ['sbarFullHeight', 'winNode', 'blurAutofill', 'libAutoSync', 'pn_h_auto']
 				}
 				box.all = box.behaviour.concat(box.display, box.albumArt, box.custom, box.advanced);
@@ -781,7 +795,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					custom: [],
 					advanced: []
 				}
-				radio.all = radio.behaviour.concat(radio.behaviour, radio.display, radio.albumArt);
+				radio.all = radio.behaviour.concat(radio.behaviour, radio.albumArt);
 				callback = parsed_args[3];
 				props_callback = parsed_args[4];
 
@@ -839,6 +853,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				}
 
 				function setNode(n) {
+					setNodeLabels();
 					window.node_dropdown.innerHTML = nodeLabels[n];
 					ppt['nodeStyle_internal'].value = n;
 					window.node.style.display = 'none';
@@ -935,7 +950,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 							['%field1%&#166%field2%&#166...', 'Views', '&#166 combines different fields into the same branch level, e.g. use %album artist%&#166%artist% or %&ltalbum artist&gt%&#166%&ltartist&gt%.'],
 							['$nodisplay{X}', 'Views', "Sorts & groups by X without display of X, e.g. the following sorts latest albums first & displays the date.<br><input class='input75' style='font:1em Segoe UI; border:none; background:none;' value='%artist%|$nodisplay{$sub(99999,%date%)}%album%[ &#39[&#39%date%&#39]&#39]|%tracknumber%. %title%'/>"],
 							['$nowplaying{X}', 'Filters', 'Returns value of X for the playing track, e.g. artist IS $nowplaying{$meta(artist,0)} Tree displays tracks by nowplaying artist.'],
-							['$searchtext', 'Filters', 'Returns search text, e.g. query "genre HAS $searchtext" with search text "rock" yields filter "genre HAS rock"'],
+							['$searchtext', 'Filters', 'Returns search text, e.g. enter following as a filter "genre HAS $searchtext", then type "rock" in search box: yields query "genre HAS rock"'],
 							['$colour{normal,hover,selected}', 'Views', 'Set different colours for parts of a line of text, see below for more info.']				
 							];
 							var items = [];
@@ -1077,29 +1092,32 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					for (i = 0; i < 3; i++) {window.bar.insertAdjacentHTML('beforeend', '<div><input id="bar_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="bar_checkbox'+i+'" class="checkbox_label">'+barLabels[i]+'</label></div>');}
 					
 					window.theme_dropdown.innerHTML = themeLabels[ppt['theme_internal'].value];
-					for (i = 0; i < 5; i++) {window.themeBg.insertAdjacentHTML('beforeend', '<a onclick="setTheme(' + i + ');">'+themeLabels[i]+'</a>');}
+					for (i = 0; i < 6; i++) {window.themeBg.insertAdjacentHTML('beforeend', '<a onclick="setTheme(' + i + ');">'+themeLabels[i]+'</a>');}
 					
-					i = 5; window.themeStyle.insertAdjacentHTML('beforeend', '<div><input id="theme_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="theme_checkbox'+i+'" class="checkbox_label">'+themeLabels[i]+'</label></div>');
+					i = 6; window.themeStyle.insertAdjacentHTML('beforeend', '<div><input id="theme_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="theme_checkbox'+i+'" class="checkbox_label">'+themeLabels[i]+'</label></div>');
 					i = 0; window.coverFormat.insertAdjacentHTML('beforeend', '<div><input id="coverFormat_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="coverFormat_checkbox'+i+'" class="checkbox_label">'+coverFormatLabels[i]+'</label></div>');
 					i = 1; window.coverFormat.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="coverFormat_container'+i+'" name="display_input" class="input3" /><label for="coverFormat_container'+i+'" class="inp_label2">'+coverFormatLabels[i]+'</label></div>');
 					for (i = 0; i < 2; i++) {window.metrics1.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');}
 					for (i = 2; i < 4; i++) {window.metrics2.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');}
+					i = 4; window.metrics3.insertAdjacentHTML('beforeend', '<div class="input_cnt3"><input id="metrics_container'+i+'" name="display_input" style="padding:0; margin:0;" class="input3" /><label for="metrics_container'+i+'" class="inp_label2">'+metricsLabels[i]+'</label></div>');
 			
 					window.root_dropdown.innerHTML = rootLabels[ppt['rootNode_internal'].value];
 					for (i = 0; i < 4; i++) {window.root.insertAdjacentHTML('beforeend', '<a onclick="setRoot(' + i + ');">'+rootLabels[i]+'</a>');}
 					i = 4; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
+					i = 5; window.rootStyle.insertAdjacentHTML('beforeend', '<div><input id="root_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="root_checkbox'+i+'" class="checkbox_label">'+rootLabels[i]+'</label></div>');
 
-					window.node_dropdown.innerHTML = nodeLabels[ppt['nodeStyle_internal'].value];
-					for (i = 0; i < 5; i++) {window.node.insertAdjacentHTML('beforeend', '<a onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
-					i = 5; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">'+nodeLabels[i]+'</label></div>');
+					window.node_dropdown.innerHTML = ppt['nodeStyle_internal'].value != 7 ? nodeLabels[ppt['nodeStyle_internal'].value] : 'Squares (windows)';
+					for (i = 0; i < 7; i++) {window.node.insertAdjacentHTML('beforeend', '<a id="nodeNo'+i+'" onclick="setNode(' + i + ');">'+nodeLabels[i]+'</a>');}
+					i = 7; window.nodeLines.insertAdjacentHTML('beforeend', '<div><input id="node_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="node_checkbox'+i+'" class="checkbox_label">Show lines (squares only)</label></div>');
 
 					window.itemCounts_dropdown.innerHTML = itemCountsLabels[ppt['nodeCounts_internal'].value];
 					for (i = 0; i < 3; i++) {window.itemCounts.insertAdjacentHTML('beforeend', '<a onclick="setItemCounts(' + i + ');">'+itemCountsLabels[i]+'</a>');}
-					i = 3; window.countsRight.insertAdjacentHTML('beforeend', '<div><input id="itemCounts_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="itemCounts_checkbox'+i+'" class="checkbox_label">'+itemCountsLabels[i]+'</label></div>');
+					for (i = 3; i < 5; i++) {window.countsRight.insertAdjacentHTML('beforeend', '<div><input id="itemCounts_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="itemCounts_checkbox'+i+'" class="checkbox_label">'+itemCountsLabels[i]+'</label></div>');}
 					
 					window.showHl_dropdown.innerHTML = highLightLabels[ppt['highLightRow_internal'].value];
 					for (i = 0; i < 4; i++) {window.showHl.insertAdjacentHTML('beforeend', '<a onclick="setHoverBg(' + i + ');">'+highLightLabels[i]+'</a>');}
-					for (i = 4; i < 6; i++) {window.showH2.insertAdjacentHTML('beforeend', '<div><input id="showH2_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="showH2_checkbox'+i+'" class="checkbox_label">'+highLightLabels[i]+'</label></div>');}
+					i = 0; window.frameStyle.insertAdjacentHTML('beforeend', '<div><input id="frame_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="frame_checkbox'+i+'" class="checkbox_label">Frame style (album art): image border</label></div>');
+					for (i = 4; i < 7; i++) {window.showH2.insertAdjacentHTML('beforeend', '<div><input id="showH2_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="showH2_checkbox'+i+'" class="checkbox_label">'+highLightLabels[i]+'</label></div>');}
 					for (i = 0; i < 5; i++) {window.show.insertAdjacentHTML('beforeend', '<div><input id="show_checkbox'+i+'" name="display_checkbox" style="'+cbox+'" type="checkbox" /><label for="show_checkbox'+i+'" class="checkbox_label">'+showLabels[i]+'</label></div>');}
 				}
 
@@ -1120,9 +1138,9 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					for (i = 0; i < 3; i++) {window.overlay.insertAdjacentHTML('beforeend', '<a onclick="setOverlay(' + i + ');">'+albumArtOverlayLabels[i]+'</a>');}
 
 					for (i = 0; i < 2; i++) {window.followCurrent.insertAdjacentHTML('beforeend', '<div><input id="selection_checkbox'+i+'" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="selection_checkbox'+i+'" class="checkbox_label">'+followCurrentLabels[i]+'</label></div>');}
-					window.useCache.insertAdjacentHTML('beforeend', '<div><input id="cache_checkbox" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="cache_checkbox" class="checkbox_label">Enable</label></div>');
-					var pth = '*YOUR PATH*\\foobar2000\\yttm\\art_img\\$cut(%artist%,1)\\%artist%\\*    [CHANGE *YOUR PATH* as required; pattern assumes biography is saving to default location]';
-					window.photoPath.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt_photoPath"><input name="photoPath_view" type="text" class="input98" readonly value="'+pth+'" /></div>')
+					for (i = 0; i < 2; i++) {window.useCache.insertAdjacentHTML('beforeend', '<div><input id="cache_checkbox" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="cache_checkbox" class="checkbox_label">'+diskCacheLabels[i]+'</label></div>');}
+					var pth = '...*YOUR PATH*...\\art_img\\$cut(%artist%,1)\\%artist%\\*    [CHANGE ...*YOUR PATH*... as required; pattern assumes biography is saving to default folder]';
+					window.photoPath.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt_photoPath"><input name="photoPath_view" class="input98" readonly value="'+pth+'" /></div>')
 
 					window.rootStub_dropdown.innerHTML = '<b>Root:</b> <img src="'+rootStubLabels[root_ix].path +'" alt="'+rootStubLabels[root_ix].name+'" width="'+ em +'" height="'+ em +'" class="stub"/> '+rootStubLabels[root_ix].name+'<';
 					for (i = 0; i < rootStubLabels.length; i++) {window.rootStub.insertAdjacentHTML('beforeend', '<a onclick="setRootImage(' + i + ');"> <img src="'+rootStubLabels[i].path+'" alt="'+rootStubLabels[i].name+'" width="'+ em +'" height="'+ em +'" style="vertical-align:middle;"/> '+rootStubLabels[i].name+'</a>');}
@@ -1138,7 +1156,11 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					window.sameAsTree.insertAdjacentHTML('beforeend', '<div><input id="sameAsTree_checkbox" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="sameAsTree_checkbox" class="checkbox_label">Same As Tree</label></div>');
 					
 					window.thumbSize_dropdown.innerHTML = thumbnailSizeLabels[ppt['thumbNailSize_internal'].value];
-					for (i = 0; i < 4; i++) {window.thumbSize.insertAdjacentHTML('beforeend', '<a onclick="setthumbSize(' + i + ');">'+thumbnailSizeLabels[i]+'</a>');}
+					for (i = 0; i < 5; i++) {window.thumbSize.insertAdjacentHTML('beforeend', '<a onclick="setthumbSize(' + i + ');">'+thumbnailSizeLabels[i]+'</a>');}
+					
+					i = 0; window.indexLetter.insertAdjacentHTML('beforeend', '<div><input id="indexLetter_checkbox'+i+'" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="indexLetter_checkbox'+i+'" class="checkbox_label">Show on scrollbar drag</label></div>');
+					//i = 1; window.indexLetter.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="indexLetter_container'+i+'" name="albumart_input" class="input7" /><label for="indexLetter_container'+i+'" class="inp_label2">'+indexLetterLabels[i]+'</label></div>');
+					//i = 2; window.indexLetter.insertAdjacentHTML('beforeend', '<div><input id="indexLetter_checkbox'+i+'" name="albumart_checkbox" style="'+cbox+'" type="checkbox" /><label for="indexLetter_checkbox'+i+'" class="checkbox_label">'+indexLetterLabels[i]+'</label></div>');
 				}
 
 				var bg = [];
@@ -1157,7 +1179,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 
 				function setCustom() {
 					i = 0; window.fonts.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="font_checkbox'+i+'" name="custom_checkbox" style="'+cbox+'" type="checkbox" /><input id="font_container'+i+'" name="custom_input" class="input40" /><label for="font_container'+i+'" class="inp_label2">'+fontLabels[i]+'</label></div>');
-					for (i = 1; i < 3; i++) {window.albumArtFonts.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="font_checkbox'+i+'" name="custom_checkbox" style="'+cbox+'" type="checkbox" /><input id="font_container'+i+'" name="custom_input" class="input40" /><label for="font_container'+i+'" class="inp_label2">'+fontLabels[i]+'</label></div>');}
+					for (i = 1; i < 4; i++) {window.albumArtFonts.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="font_checkbox'+i+'" name="custom_checkbox" style="'+cbox+'" type="checkbox" /><input id="font_container'+i+'" name="custom_input" class="input40" /><label for="font_container'+i+'" class="inp_label2">'+fontLabels[i]+'</label></div>');}
 					for (i = 0; i < 6; i++) {window.colours1.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="colour_checkbox'+i+'" name="custom_checkbox" style="'+cbox+'" type="checkbox" /><input id="colour_container'+i+'" name="custom_input" class="input40" /><label for="colour_container'+i+'" class="inp_label2">'+colourLabels[i]+'</label></div>');}
 					for (i = 6; i < 19; i++) {window.colours2.insertAdjacentHTML('beforeend', '<div class="input_cnt1"><input id="colour_checkbox'+i+'" name="custom_checkbox" style="'+cbox+'" type="checkbox" /><input id="colour_container'+i+'" name="custom_input" class="input40" /><label for="colour_container'+i+'" class="inp_label2">'+colourLabels[i]+'</label></div>');}
 				}
@@ -1235,11 +1257,14 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				if (window.remember_checkbox1.checked) window.remember_checkbox0.checked = true;
 				window.remember_checkbox0.parentNode.disabled = window.remember_checkbox1.checked;
 				
-				window.theme_checkbox5.parentNode.disabled = ppt['theme_internal'].value == 1;
-				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0;
-				window.showH2_checkbox4.parentNode.disabled = ppt['nodeStyle_internal'].value == 0 && ppt['winNode_internal'].value != 0;
+				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
+				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.frame_checkbox0.parentNode.disabled = ppt['highLightRow_internal'].value != 3;
+				window.node_checkbox7.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 7;
+				window.itemCounts_checkbox3.parentNode.disabled = window.itemCounts_checkbox4.checked;
+				setNodeLabels();
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 7);
 				document.getElementById("albumArtCfg").style.display = window.show_checkbox2.checked ? "block" : "none";
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 				window.thumbSize_dropdown.style.visibility = window.flowMode_checkbox.checked ? 'hidden' : 'visible';
@@ -1255,7 +1280,7 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				var radios = radio[page];
 				for (i = 0; i < radios.length; i++) {
 					var radioBtns = document.getElementsByName(radios[i]);
-					var new_value = radios[i] == 'nodeStyle' && ppt[radios[i] + '_internal'][value] == 5 ? 0 : ppt[radios[i] + '_internal'][value];
+					var new_value = radios[i] == 'nodeStyle' && ppt[radios[i] + '_internal'][value] == 7 ? 0 : ppt[radios[i] + '_internal'][value];
 					for (j = 0; j < radioBtns.length; j++) {
 						if (j == new_value) {
 							radioBtns[j].checked = true;
@@ -1263,12 +1288,12 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 						}
 					}
 				}
-				window.theme_checkbox5.parentNode.disabled = ppt['theme_internal'].value == 1;
-				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 4;
-				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 4;
+				window.theme_checkbox6.parentNode.disabled = ppt['theme_internal'].value == 1 || ppt['theme_internal'].value == 4;
+				window.coverFormat_checkbox0.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.coverFormat_container1.parentNode.disabled = ppt['theme_internal'].value != 5;
+				window.node_checkbox7.parentNode.disabled = ppt['nodeStyle_internal'].value != 0 && ppt['nodeStyle_internal'].value != 7;
+				window.showH2_checkbox5.parentNode.disabled = window.cusNode_checkbox3.checked && (ppt['nodeStyle_internal'].value == 0 || ppt['nodeStyle_internal'].value == 7);
 				
-				window.node_checkbox5.parentNode.disabled = ppt['nodeStyle_internal'].value != 0;
-				window.showH2_checkbox4.parentNode.disabled = window.node;
 				window.albumArtLabelType2.parentNode.disabled = window.flowMode_checkbox.checked;
 			}
 
@@ -1276,8 +1301,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				if (clear) document.getElementById("view").innerHTML = '';
 				for (i = 0; i < cfg[0].length; i++) {
 					var v = cfg[0][i];
-					if (i < cfg[0].length - 1) window.view.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt'+i+'"><input name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+i+'" name="view_name" type="text" class="input21" /><input name="input_view" type="text" class="input71" /></div>')
-					else window.view.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt_folderView"><input id="checkbox_folderView" name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+i+'" name="view_name" type="text" class="input21" /><input name="input_view" type="text" class="input71" readonly /></div>')
+					if (i < cfg[0].length - 1) window.view.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt'+i+'"><input name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+i+'" name="view_name" class="input21" /><input name="input_view" class="input71" /></div>')
+					else window.view.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="view_cnt_folderView"><input id="checkbox_folderView" name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+i+'" name="view_name" class="input21" /><input name="input_view" class="input71" readonly /></div>')
 				}
 			}
 			
@@ -1286,8 +1311,8 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 				if (clear) document.getElementById("filter").innerHTML = '';
 				for (i = 0; i < cfg[1].length; i++) {
 					var v = cfg[1][i];
-					if (i < cfg[1].length - 1) window.filter.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="filter_cnt'+i+'"><input name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+i+'" name="filter_name" type="text" class="input21" /><input name="input_filter" type="text" class="input71" /></div>');
-					else window.filter.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="filter_cnt_menuName"><input id="checkbox_menuName" name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+i+'" name="filter_name" type="text" class="input21" /><input name="input_filter" type="text" class="input71" readonly /></div>');
+					if (i < cfg[1].length - 1) window.filter.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="filter_cnt'+i+'"><input name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+i+'" name="filter_name" class="input21" /><input name="input_filter" class="input71" /></div>');
+					else window.filter.insertAdjacentHTML('beforeend', '<div class="input_cnt1" id="filter_cnt_menuName"><input id="checkbox_menuName" name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+i+'" name="filter_name" class="input21" /><input name="input_filter" class="input71" readonly /></div>');
 				}
 			}
 
@@ -1385,14 +1410,14 @@ Font style codes: 0 regular, 1 bold, 2 italic,  3 bold italic, 4 underline
 					case 'views':
 						var list = document.getElementById("view").querySelectorAll("[id^='view_cnt']");
 						if (list.length > 98) return; // no limited to 100
-						list[list.length - 1].insertAdjacentHTML("beforebegin", '<div class="input_cnt1" id="view_cnt'+new_id+'"><input id="viewCheckbox'+ new_id+'" name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+new_id+'" name="view_name" type="text" class="input21" value="" /><input name="input_view" type="text" class="input71" value="" /></div>');
+						list[list.length - 1].insertAdjacentHTML("beforebegin", '<div class="input_cnt1" id="view_cnt'+new_id+'"><input id="viewCheckbox'+ new_id+'" name="viewCheckbox" style="'+cbox+'" type="checkbox" /><input id="view_container'+new_id+'" name="view_name" class="input21" value="" /><input name="input_view" class="input71" value="" /></div>');
 						document.getElementById("viewCheckbox" + new_id).checked = true;
 						document.getElementById("view_container" + new_id).focus();
 						break;
 					case 'filters':
 						var list = document.getElementById("filter").querySelectorAll("[id^='filter_cnt']");
 						if (list.length > 98) return; // no limited to 100
-						list[list.length - 1].insertAdjacentHTML("beforebegin", '<div class="input_cnt1" id="filter_cnt'+new_id+'"><input id="filterCheckbox'+ new_id+'" name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+new_id+'" name="filter_name" type="text" class="input21" value="" /><input name="input_filter" type="text" class="input71" value="" /></div>');
+						list[list.length - 1].insertAdjacentHTML("beforebegin", '<div class="input_cnt1" id="filter_cnt'+new_id+'"><input id="filterCheckbox'+ new_id+'" name="filterCheckbox" style="'+cbox+'" type="checkbox" /><input id="filter_container'+new_id+'" name="filter_name" class="input21" value="" /><input name="input_filter" class="input71" value="" /></div>');
 						document.getElementById("filterCheckbox" + new_id).checked = true;
 						document.getElementById("filter_container" + new_id).focus();
 						break;

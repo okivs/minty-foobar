@@ -1,3 +1,5 @@
+﻿'use strict';
+
 class Populate {
 	constructor() {
 		this.childCount = 0;
@@ -300,7 +302,7 @@ class Populate {
 			br[0].sorted = true;
 		}
 		const br_l = br.length;
-		const imgItemCounts = ppt.albumArtLabelType == 2 && panel.lines == 1 && (this.nodeCounts == 1 || this.nodeCounts == 2);
+		const imgItemCounts = ppt.itemOverlayType == 1 || (ppt.albumArtLabelType == 2 || ppt.itemShowDuration) && (this.nodeCounts == 1 || this.nodeCounts == 2);
 		const par = this.tree.length - 1;
 		if (tr == 0) this.clearTree();
 		let type;
@@ -335,11 +337,11 @@ class Populate {
 			item.name = !panel.noDisplay ? item.nm : item.nm.replace(/#@#.*?#@#/g, '');
 			if (!panel.imgView) {
 				this.getItemCount(item, par, pr, tr, type);
-				if (this.countsRight) item.count = item.count.replace(/[()]/g, '');
-			} else if (ppt.itemOverlayType == 1) {
+				if (this.countsRight && !this.durationShow) item.count = item.count.replace(/[()]/g, '');
+			} else if (imgItemCounts) {
 				item.count = this.trackCount(item.item);
 				item.count += item.count > 1 ? ' tracks' : ' track';
-			} else if (imgItemCounts) this.getItemCount(item, par, pr, tr, type);
+			}
 			if (v.child.length > 0) this.buildTree(v.child, tr + 1, node, !item.root ? false : true);
 		});
 		if (this.rootNode == 3) this.tree[0].name = this.tree[0].child.length > 1 ? panel.rootName.replace('#^^^^#', this.tree[0].child.length) : panel.rootName1;
@@ -351,6 +353,19 @@ class Populate {
 
 	butTooltipFont() {
 		return ['Segoe UI', 15 * $.scale * ppt.zoomTooltipBut / 100, 0];
+	}
+
+	calcTotalDuration(v) {
+		const handleList = new FbMetadbHandleList();
+		let items = [];
+		this.addItems(items, v.item);
+		this.uniq(items);
+		items = [...new Set(items)].sort(this.numSort)
+		items.some(v => {
+			if (v >= panel.list.Count) return true;
+			handleList.Add(panel.list[v]);
+		});
+		return utils.FormatDuration(handleList.CalcTotalDuration());
 	}
 
 	checkAutoHeight() {
@@ -367,7 +382,7 @@ class Populate {
 	}
 
 	checkNode(gr) {
-		if (sbar.draw_timer || this.nodeStyle != 5) return;
+		if (sbar.draw_timer || this.nodeStyle != 7) return;
 		try {
 			ui.style.symb.SetPartAndStateID(2, 1);
 			ui.style.symb.SetPartAndStateID(2, 2);
@@ -396,7 +411,8 @@ class Populate {
 		if (!item) return;
 		switch (true) {
 			case !panel.imgView: {
-				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight ? item.count : '');
+				text = (!panel.colMarker ? item.name : item.name.replace(/@!#.*?@!#/g, '')) + (!this.countsRight || this.durationShow ? item.count : '');
+				text = text.replace(/&/g, '&&');
 				if (text != tooltip.Text) this.deactivateTooltip();
 				const trace = item.tt && item.tt.needed && x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y && y <= item.tt.y + ui.row.h;
 				if (!trace) {
@@ -408,7 +424,7 @@ class Populate {
 			case panel.imgView: {
 				let trace1 = false;
 				let trace2 = false;
-				tooltip.SetMaxWidth(800);
+				let trace3 = false;
 				if (!img.labels.hide) {
 					if (!item.tt) {
 						this.deactivateTooltip();
@@ -416,15 +432,17 @@ class Populate {
 					}
 					trace1 = x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y1 && y <= item.tt.y1 + img.text.h;
 					trace2 = item.tt.y2 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y2 && y <= item.tt.y2 + img.text.h;
-					text = trace1 || trace2 ? item.tt.text : '';
+					trace3 = item.tt.y3 == -1 ? false : x >= item.tt.x && x <= item.tt.x + item.tt.w && y >= item.tt.y3 && y <= item.tt.y3 + img.text.h;
+					text = trace1 || trace2 || trace3 ? item.tt.text : '';
 					if (text != tooltip.Text) this.deactivateTooltip();
-					if (!trace1 && !trace2 || !item.tt[1] && !item.tt[2]) {
+					if (!trace1 && !trace2 && !trace3 || !item.tt[1] && !item.tt[2] && !item.tt[3]) {
 						this.deactivateTooltip();
 						return;
 					}
 				} else {
 					text = panel.lines == 2 ? !ppt.albumArtFlipLabels ? item.grp + '\n' + item.lot : item.lot + '\n' + item.grp : item.grp;
 					if (panel.colMarker) text = text.replace(/@!#.*?@!#/g, '');
+					text = text.replace(/&/g, '&&');
 					if (text != tooltip.Text) this.deactivateTooltip();
 				}
 				break;
@@ -554,7 +572,7 @@ class Populate {
 		} else {
 			let lightCol = ui.getSelCol(ui.col.icon_h, true) == 50;
 			$.gr(1, 1, false, g => {
-				const h = this.nodeStyle != 5 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
+				const h = this.nodeStyle != 7 ? g.CalcTextHeight('String', ui.icon.font) / 15 : g.CalcTextHeight('String', ui.font.main) / 20;
 				this.sy_sz = Math.floor(Math.max(8 * ppt.zoomNode / 100 * h, 5));
 			});
 
@@ -674,16 +692,18 @@ class Populate {
 			}
 			const handleList = this.getHandleList('newItems');
 			this.sortIfNeeded(handleList);
-			fb.DoDragDrop(window.ID, handleList, handleList.Count ? 1 | 4 : 0);
+			fb.DoDragDrop(0, handleList, handleList.Count ? 1 | 4 : 0);
 			this.lbtnDn = false;
 		}
 	}
 
 	draw(gr) {
 		if (lib.empty) return gr.GdiDrawText(lib.empty, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h * 3, 0x00000004 | 0x00000400);
-		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(pop.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
+		if (!this.tree.length || !panel.draw) return gr.GdiDrawText(this.libItems && !panel.search.txt && !ppt.filterBy && ppt.libSource ? 'Loading...' : lib.none, ui.font.main, ui.col.text, ui.sz.margin, panel.search.h, panel.tree.w, ui.row.h, 0x00000004 | 0x00000400);
 		if (panel.imgView) return;
 		const b = $.clamp(Math.round(sbar.delta / ui.row.h + 0.4), 0, this.tree.length - 1);
+		const bar_x = this.nodeStyle && this.nodeStyle < 5 ? 0 : ui.sz.pad;
+		const bar_w = Math.min(ui.sz.margin / 2, ui.sz.sideMarker * 2);
 		const f = Math.min(b + panel.rows, this.tree.length);
 		const nowp_c = [];
 		const row = [];
@@ -709,10 +729,10 @@ class Populate {
 		}
 		for (i = b; i < f; i++) {
 			const item = this.tree[i];
-			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && this.countsRight ? (!this.countsRight ? item.count : '') : '');
+			nm[i] = item.name + (i || this.rootNode != 3 || this.nodeCounts == 1 && (this.countsRight || this.durationShow) ? (!this.countsRight || this.durationShow ? item.count : '') : '');
 			if (item.id != this.id) {
 				item.name_w = gr.CalcTextWidth(!panel.colMarker ? nm[i] : nm[i].replace(/@!#.*?@!#/g, ''), ui.font.main);
-				item.count_w = this.countsRight ? gr.CalcTextWidth(item.count, ui.font.main) + (item.count ? ui.row.h * 0.2 : 0) : 0;
+				item.count_w = this.countsRight || this.durationShow ? gr.CalcTextWidth(!this.durationShow ? item.count : item.duration, ui.font.main) + ((!this.durationShow ? item.count : item.duration) ? ui.row.h * 0.2 : 0) : 0;
 				if (!this.fullLineSelection) {
 					item.w = item.name_w;
 					item.id = this.id;
@@ -735,12 +755,23 @@ class Populate {
 					}
 					if (!nowp_c.includes(i)) {
 						if (this.fullLineSelection && this.sbarShow == 1 && ui.sbar.type == 2) {
-							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
-							gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
-							gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							if (this.highlight.row || !this.fullLineSelection) {
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.row.h, ui.col.bgSel);
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+							} else {
+								gr.FillSolidRect(sel_x, item_y, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(sel_x, item_y + ui.row.h, sel_w + ui.l.w, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
+							}
 						} else {
-							gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
-							gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+							if (this.highlight.row || !this.fullLineSelection) {
+								gr.FillSolidRect(sel_x, item_y, sel_w, ui.row.h, ui.col.bgSel);
+								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+							} else {
+								gr.DrawRect(sel_x + Math.floor(ui.l.w / 2), item_y, sel_w, ui.row.h, ui.l.w, ui.col.bgSelframe);
+								gr.FillSolidRect(bar_x, item_y, bar_w, ui.row.h, ui.col.sideMarker);
+							}
 						}
 					}
 				}
@@ -799,7 +830,16 @@ class Populate {
 						if (item.bot) row[tr] = undefined;
 					}
 				}
+			}
+		}
 
+		for (i = b; i < f; i++) {
+			const item = this.tree[i];
+			const tr = !this.inlineRoot ? item.tr : Math.max(item.tr - 1, 0);
+			item_y = Math.round(ui.row.h * i + panel.search.h - sbar.delta);
+			if (item_y < panel.filter.y) {
+				item_x = Math.round(this.treeIndent * tr + ui.sz.margin);
+				if (this.inlineRoot && !item.tr) item_x = ui.sz.marginSearch;
 				if (ui.style.squareNode) {
 					if (!item.track && (!this.inlineRoot || item.tr)) {
 						const y2 = ui.row.h * i + y1 - ui.l.wf;
@@ -817,18 +857,18 @@ class Populate {
 					item.w = panel.tree.w - item_x;
 					item.id = this.id;
 				}
-				let np = this.m.i == i && this.highlight.row == 2 ? false : nowp_c.includes(i);
-				const txt_co = np ? ui.col.nowp : item.sel && this.fullLineSelection ? ui.col.textSel : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
-				const type = item.sel ? 2 : this.m.i == i && this.highlight.text ? 1 : 0;
+				let np = this.m.i == i && this.highlight.row == 2 ? false : nowp_c.includes(i) || panel.textDiffHighlight && this.m.i == i;
+				const txt_co = np ? ui.col.nowp : item.sel && this.fullLineSelection ? (this.highlight.row ? ui.col.textSel : ui.col.text) : this.m.i == i && this.highlight.text ? ui.col.text_h : ui.col.counts || ui.col.count;
+				const type = item.sel ? (this.highlight.row || !this.fullLineSelection ? 2 : 0) : this.m.i == i && this.highlight.text ? 1 : 0;
 				const txt_c = np ? ui.col.nowp : ui.col.txtArr[type];
 				!panel.colMarker ? gr.GdiDrawText(nm[i], ui.font.main, txt_c, item_x, item_y, w, ui.row.h, panel.lc) : this.cusCol(gr, nm[i], item, item_x, item_y, w, ui.row.h, type, np, ui.font.main, ui.font.mainEllipsisSpace, 'text');
-				if (this.countsRight) gr.GdiDrawText(item.count, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
+				if (this.countsRight || this.durationShow) gr.GdiDrawText(!this.durationShow ? item.count : item.duration, ui.font.small, txt_co, item_x, item_y, panel.tree.w - item_x, ui.row.h, panel.rc);
 			}
 		}
 	}
 
 	drawNode(gr, item, x, y, parent, hover, sel) {
-		const selFullLine = sel && this.fullLineSelection;
+		const selCol = sel && this.fullLineSelection && this.highlight.row;
 		const y2 = Math.round(y);
 		switch (this.nodeStyle) {
 			case 0:
@@ -839,36 +879,54 @@ class Populate {
 				break;
 			case 1:
 			case 2:
+				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				if (parent) {
 					if (hover) {
-						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else {
+						gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 1 ) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					}
 				} else {
 					if (hover) {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 					} else {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						if (this.nodeStyle == 2) gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
-
+						gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2 + 1, panel.tree.w - x, ui.row.h, panel.s_lc);
 					}
 				}
 				break;
-			case 3: {
+			case 3: case 4: {
+				if (!this.highlight.row && this.fullLineSelection) x += ui.l.w;
 				const y3 = Math.round(y + (ui.row.h - this.sy_sz) / 2 - 2);
 				gr.SetSmoothingMode(4);
 				if (parent) {
 					if (hover) {
-						if (this.highlight.node) gr.DrawString(ui.icon.expand2, ui.icon.font, !selFullLine ? ui.col.icon_h : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-						else gr.DrawString(ui.icon.expand2, ui.icon.font, !selFullLine ? ui.col.icon_e & 0xCFffffff : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
-				} else if (hover && this.highlight.node) gr.DrawImage(!selFullLine ? this.triangle.highlight : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.highlight.Width, this.triangle.highlight.Height);
-				else gr.DrawImage(!selFullLine ? this.triangle.expand : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.expand.Width, this.triangle.expand.Height);
+						if (this.highlight.node) gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_h : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						else gr.DrawString(ui.icon.expand2, ui.icon.font, !selCol ? ui.col.icon_e & 0xCFffffff : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else {
+						gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+						if (this.nodeStyle == 3) gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x + 1, y2, panel.tree.w - x, ui.row.h, panel.s_lc);
+					}
+				} else if (hover && this.highlight.node) gr.DrawImage(!selCol ? this.triangle.highlight : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.highlight.Width, this.triangle.highlight.Height);
+				else gr.DrawImage(!selCol ? this.triangle.expand : this.triangle.select, x - ui.icon.offset, y3, this.sy_sz, this.sy_sz, 0, 0, this.triangle.expand.Width, this.triangle.expand.Height);
 				gr.SetSmoothingMode(0);
 				break;
 			}
 			case 5:
+				if (parent) {
+					if (hover) {
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+				} else {
+					if (hover) {
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y2, panel.tree.w - x, ui.row.h - 1, panel.s_lc);
+				}
+				break;
+			case 7:
 				if (item > 1) item -= 2;
 				ui.style.symb.SetPartAndStateID(2, !item ? 1 : 2);
 				ui.style.symb.DrawThemeBackground(gr, x, y, ui.sz.node, ui.sz.node);
@@ -876,12 +934,12 @@ class Populate {
 			default:
 				if (parent) {
 					if (hover) {
-						gr.DrawString(ui.icon.expand, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selFullLine ? ui.col.icon_c : ui.col.textSel, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.expand, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_e, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.expand, ui.icon.font, !selCol ? ui.col.icon_c : ui.col.textSel, x, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
 				} else {
 					if (hover) {
-						gr.DrawString(ui.icon.collapse, ui.icon.font, selFullLine ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
-					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selFullLine ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+						gr.DrawString(ui.icon.collapse, ui.icon.font, selCol ? ui.col.textSel : this.highlight.node ? ui.col.icon_h : ui.col.icon_c, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
+					} else gr.DrawString(ui.icon.collapse, ui.icon.font, !selCol ? ui.col.icon_e : ui.col.textSel, x - ui.icon.offset, y + this.iconVerticalPad, panel.tree.w - x, ui.row.h, panel.s_lc);
 				}
 				break;
 		}
@@ -1072,6 +1130,7 @@ class Populate {
 	}
 
 	getItemCount(item, par, pr, tr, type) {
+		if (this.durationShow) item.duration = this.calcTotalDuration(item);
 		item.count = !item.track || !this.showTracks ? (item.name ? ' ' : '') + (this.nodeCounts == 1 ? '(' + this.trackCount(item.item) + ')' : this.nodeCounts == 2 ? '(' + this.branchCount(item, !item.root ? false : true, true, false, tr + (tr > 2 ? this.tree[this.tree[pr].par].nm : '') + (tr > 1 ? this.tree[pr].nm : '') + (tr > 0 ? this.tree[par].nm : '') + item.nm, type) + ')' : '') : '';
 		if (!this.showTracks && item.count == (item.name ? ' ' : '') + '(0)') item.count = '';
 	}
@@ -1093,7 +1152,7 @@ class Populate {
 				const row_ix = img.style.vertical ? Math.ceil((y + sbar.delta - img.panel.y) / img.row.h) - 1 : 0;
 				const column_ix = img.style.vertical ? (!img.labels.right && !ppt.albumArtFlowMode ? Math.ceil((x - img.panel.x) / img.columnWidth) - 1 : 0) : Math.ceil((x + sbar.delta - img.panel.x) / img.columnWidth) - 1;
 				ix = (row_ix * img.columns) + column_ix;
-				ix = ix > pop.tree.length - 1 ? -1 : ix;
+				ix = ix > this.tree.length - 1 ? -1 : ix;
 				return ix;
 			}
 			return -1;
@@ -1188,7 +1247,6 @@ class Populate {
 		this.dbl_clicked = false;
 		if (y < panel.search.h) return;
 		let ix = this.get_ix(x, y, true, false);
-		panel.pos = ix;
 		if (ix >= this.tree.length || ix < 0) return;
 		this.deactivateTooltip();
 		if (ppt.touchControl) {
@@ -1198,6 +1256,7 @@ class Populate {
 		this.clicked_on = this.clickedOn(x, y, item);
 		switch (this.clicked_on) {
 			case 'node':
+				panel.pos = ix;
 				this.expandCollapse(x, y, item, ix);
 				this.checkRow(x, y);
 				break;
@@ -1205,6 +1264,7 @@ class Populate {
 				this.last_pressed_coord.x = x;
 				this.last_pressed_coord.y = y;
 				this.lbtnDn = true;
+				panel.pos = ix;
 				if (ppt.touchControl) break;
 				if (vk.k('alt') && this.autoFill.mouse) return;
 				if (!item.sel && !vk.k('ctrl')) this.setTreeSel(ix, item.sel);
@@ -1227,7 +1287,6 @@ class Populate {
 		if (ppt.touchControl && (this.autoFill.mouse || this.autoPlay.click) && ui.id.touch_dn != ix) return;
 		const item = this.tree[ix];
 		if (this.clicked_on != 'text') return;
-
 		if (!ppt.libSource) return this.setPlaylistSelection(ix, item);
 		if (vk.k('alt')) return this.add(x, y, !ppt.altAddToCur);
 		if (!vk.k('ctrl')) {
@@ -1258,6 +1317,16 @@ class Populate {
 		panel.treePaint();
 	}
 
+	leftKeyCheckScroll() {
+		const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+		if (sbar.scroll > panel.pos * ui.row.h) sbar.checkScroll(panel.pos * ui.row.h);
+		else if (row - sbar.rows_drawn > 0) {
+		sbar.checkScroll((panel.pos + 3 - sbar.rows_drawn) * ui.row.h);
+		}
+		else sbar.scrollRound();
+		lib.treeState(false, ppt.rememberTree);
+	}
+
 	load(list, isArray, add, autoPlay, def_pl, insert) {
 		let np_item = -1;
 		let pid = -1;
@@ -1271,10 +1340,11 @@ class Populate {
 		const items = isArray ? this.getHandleList() : list.Clone();
 
 		this.sortIfNeeded(items);
-
 		this.selList = items.Clone();
 		this.selection_holder.SetSelection(this.selList);
-		if (!add && plman.GetPlaylistLockedActions(pln).includes('RemoveItems') || plman.GetPlaylistLockedActions(pln).includes('AddItems')) return;
+		const plnIsValid = pln != -1 && pln < plman.PlaylistCount;
+		const pllockRemoveOrAdd = plnIsValid ? plman.GetPlaylistLockedActions(pln).includes('RemoveItems') || plman.GetPlaylistLockedActions(pln).includes('ReplaceItems') || plman.GetPlaylistLockedActions(pln).includes('AddItems') : false;
+		if (!add && pllockRemoveOrAdd) return;
 		if (fb.IsPlaying && !add && fb.GetNowPlaying()) {
 			np_item = items.Find(fb.GetNowPlaying());
 			let pl_chk = true;
@@ -1318,6 +1388,7 @@ class Populate {
 			if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
 			plman.ClearPlaylist(pln);
 			plman.InsertPlaylistItems(pln, 0, items);
+			plman.SetPlaylistFocusItem(pln, 0);
 		} else {
 			if (plman.PlaylistItemCount(pln) < 5000) plman.UndoBackup(pln);
 			plman.InsertPlaylistItems(pln, !insert ? plman.PlaylistItemCount(pln) : plman.GetPlaylistFocusItemIndex(pln), items, true);
@@ -1359,9 +1430,11 @@ class Populate {
 			this.m.i = ix;
 			this.check_tooltip(ix, x, y);
 		} else this.deactivateTooltip();
-		if (this.highlight.node || panel.imgView) {
-			if (ix != -1 || this.inlineRoot && !this.m.br) this.hand = true;
-		} else if (this.m.br != -1 && !(this.inlineRoot && !this.m.br)) this.hand = true;
+		if (!ppt.mousePointerOnly) {
+			if (this.highlight.node || panel.imgView) {
+				if (ix != -1 || this.inlineRoot && !this.m.br) this.hand = true;
+			} else if (this.m.br != -1 && !(this.inlineRoot && !this.m.br)) this.hand = true;
+		}
 		window.SetCursor(this.hand ? 32649 : !but.Dn && y < panel.search.h && ppt.searchShow && x > but.q.h + but.margin && x < panel.search.x + panel.search.w ? 32513 : 32512);
 		const same = this.m.i == this.cur_ix && this.m.br == this.m.cur_br && this.row.i == this.row.cur;
 		if (same && !sbar.touch.dn) return;
@@ -1465,11 +1538,8 @@ class Populate {
 			}
 		}
 		let item = -1;
-		let row = -1;
 		switch (vkey) {
 			case vk.left:
-				if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				if (panel.imgView) panel.pos -= 1;
 				panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				this.row.i = -1;
@@ -1482,7 +1552,12 @@ class Populate {
 					break;
 				}
 				// !imgView
-				if ((this.tree[panel.pos].tr == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) break;
+				if ((this.tree[panel.pos].tr == (this.rootNode ? 1 : 0)) && this.tree[panel.pos].child.length < 1) {
+					item = this.tree[panel.pos];
+					this.m.i = panel.pos = item.ix;
+					this.leftKeyCheckScroll();
+					break;
+				}
 				if (this.tree[panel.pos].child.length > 0) {
 					item = this.tree[panel.pos];
 					this.clearChild(item);
@@ -1497,13 +1572,9 @@ class Populate {
 				panel.treePaint();
 				this.setPlaylist(panel.pos, item);
 				sbar.setRows(this.tree.length);
-				if (sbar.scroll > panel.pos * ui.row.h) sbar.checkScroll(panel.pos * ui.row.h);
-				else sbar.scrollRound();
-				lib.treeState(false, ppt.rememberTree);
+				this.leftKeyCheckScroll();
 				break;
 			case vk.right: {
-				if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				if (panel.imgView) panel.pos += 1;
 				panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				this.row.i = -1;
@@ -1516,6 +1587,12 @@ class Populate {
 					break;
 				}
 				// !imgView
+				if (item.child.length) {
+					panel.pos++;
+					panel.pos = $.clamp(panel.pos, !this.rootNode ? 0 : 1, this.tree.length - 1);
+					this.upDnKeyCheckScroll(vkey);
+					break
+				}
 				if (ppt.autoCollapse) this.branchChange(item, false, true);
 				this.branch(item, !item.root ? false : true, true);
 				let n = 2;
@@ -1528,9 +1605,9 @@ class Populate {
 				this.m.i = panel.pos = item.ix;
 				this.setPlaylist(panel.pos, item);
 				sbar.setRows(this.tree.length);
-				row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
-				if (row + n + item.child.length > sbar.rows_drawn) {
-					if (item.child.length > (sbar.rows_drawn - n)) sbar.checkScroll(panel.pos * ui.row.h);
+				const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+				if (row + n + item.child.length > sbar.rows_drawn || row < 0) {
+					if (item.child.length > (sbar.rows_drawn - n) || row < 0) sbar.checkScroll(panel.pos * ui.row.h);
 					else sbar.checkScroll(Math.min(panel.pos * ui.row.h, (panel.pos + n - sbar.rows_drawn + item.child.length) * ui.row.h));
 				} else sbar.scrollRound();
 				lib.treeState(false, ppt.rememberTree);
@@ -1539,8 +1616,6 @@ class Populate {
 			case vk.pgUp:
 				if (this.tree.length == 0) break;
 				if (panel.imgView) {
-					if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-					else panel.pos = panel.pos + this.tree.length % this.tree.length;
 					panel.pos = panel.pos - img.columns * (panel.rows - 1);
 					panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				} else panel.pos = Math.max(Math.round(sbar.scroll / ui.row.h + 0.4) - Math.floor(panel.rows) + 1, !this.rootNode ? 0 : 1);
@@ -1554,8 +1629,6 @@ class Populate {
 			case vk.pgDn:
 				if (this.tree.length == 0) break;
 				if (panel.imgView) {
-					if (!(panel.pos >= 0) && this.row.i != -1) panel.pos = this.row.i;
-					else panel.pos = panel.pos + this.tree.length % this.tree.length;
 					panel.pos = panel.pos + img.columns * (panel.rows - 1);
 					panel.pos = $.clamp(panel.pos, 0, this.tree.length - 1);
 				} else panel.pos = Math.min(Math.round(sbar.scroll / ui.row.h + 0.4) + Math.floor(panel.rows) * 2 - 2, this.tree.length - 1);
@@ -1586,12 +1659,10 @@ class Populate {
 			case vk.dn:
 			case vk.up:
 				if (this.tree.length == 0) break;
-				if ((panel.pos == 0 && this.row.i == -1 && vkey == vk.up) || (panel.pos == this.tree.length - 1 && vkey == vk.dn)) {
+				if ((panel.pos == 0 && vkey == vk.up) || (panel.pos == this.tree.length - 1 && vkey == vk.dn)) {
 					this.setTreeSel(-1);
 					break;
 				}
-				if (this.row.i != -1) panel.pos = this.row.i;
-				else panel.pos = panel.pos + this.tree.length % this.tree.length;
 				this.row.i = -1;
 				this.m.i = -1;
 				if (!panel.imgView) {
@@ -1609,14 +1680,7 @@ class Populate {
 					this.setPlaylist(panel.pos, item);
 					return;
 				}
-				row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
-				if (sbar.rows_drawn - row < 3) sbar.checkScroll((panel.pos + 3) * ui.row.h - sbar.rows_drawn * ui.row.h);
-				else if (row < 2 && vkey == vk.up) sbar.checkScroll((panel.pos - 1) * ui.row.h);
-				this.m.i = panel.pos;
-				this.setTreeSel(panel.pos);
-				panel.treePaint();
-				this.setPlaylist(panel.pos, this.tree[panel.pos]);
-				lib.treeState(false, ppt.rememberTree);
+				this.upDnKeyCheckScroll(vkey);
 				break;
 		}
 	}
@@ -1740,6 +1804,7 @@ class Populate {
 
 	setValues() {
 		this.countsRight = ppt.countsRight;
+		this.durationShow = ppt.itemShowDuration;
 		this.fullLineSelection = ppt.fullLineSelection;
 		this.highlight = {
 			node: ppt.highLightNode,
@@ -1783,7 +1848,7 @@ class Populate {
 				case 'left':
 				case 'right': {
 					const row2 = (row1 * sbar.row.h - sbar.scroll) / sbar.row.h;
-					if (sbar.rows_drawn - row2 < 1) sbar.checkScroll((row1 + 1) * sbar.row.h - sbar.rows_drawn * sbar.row.h);
+					if (sbar.rows_drawn - row2 < 1 || row2 < 0) sbar.checkScroll((row1 + 1) * sbar.row.h - sbar.rows_drawn * sbar.row.h);
 					else if (row2 < 1 & (type == 'up' || type == 'left')) sbar.checkScroll(row1 * sbar.row.h);
 				}
 			}
@@ -1856,5 +1921,16 @@ class Populate {
 
 	uniq(arr) {
 		this.sel_items = [...new Set(arr)].sort(this.numSort);
+	}
+
+	upDnKeyCheckScroll(vkey) {
+		const row = (panel.pos * ui.row.h - sbar.scroll) / ui.row.h;
+		if (sbar.rows_drawn - row < 3 || row < 0) sbar.checkScroll((panel.pos + 3) * ui.row.h - sbar.rows_drawn * ui.row.h);
+		else if (row < 2 && vkey == vk.up) sbar.checkScroll((panel.pos - 1) * ui.row.h);
+		this.m.i = panel.pos;
+		this.setTreeSel(panel.pos);
+		panel.treePaint();
+		this.setPlaylist(panel.pos, this.tree[panel.pos]);
+		lib.treeState(false, ppt.rememberTree);
 	}
 }

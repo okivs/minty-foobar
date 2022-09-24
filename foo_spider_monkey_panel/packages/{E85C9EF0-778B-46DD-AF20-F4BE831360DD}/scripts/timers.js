@@ -1,3 +1,5 @@
+﻿'use strict';
+
 class Timers {
 	constructor() {
 		['cursor', 'jsearch1', 'jsearch2', 'tt'].forEach(v => this[v] = {
@@ -17,7 +19,7 @@ class Timers {
 			if ((ui.w < 1 || !window.IsVisible) && ppt.rememberTree) lib.init = true;
 			lib.getLibrary(true);
 			lib.rootNodes(ppt.rememberTree, ppt.process);
-		}, 5);
+		}, 0);
 	}
 
 	searchCursor(clear) {

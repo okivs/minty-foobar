@@ -1,7 +1,8 @@
+﻿'use strict';
+
 class Search {
 	constructor() {
 		this.cx = 0;
-		this.doc = new ActiveXObject('htmlfile');
 		this.end = 0;
 		this.lbtnDn = false;
 		this.lg = [];
@@ -32,7 +33,6 @@ class Search {
 			}
 			this.menu.sort((a, b) => pop.collator.compare(a.search, b.search));
 			ppt.searchHistory = JSON.stringify(this.menu);
-			men.refreshSearchHistoryMenu();
 		}, 3000);
 		
 	}
@@ -126,7 +126,7 @@ class Search {
 
 	lbtn_dn(x, y) {
 		panel.searchPaint();
-		this.lbtnDn = panel.search.active = (y < panel.search.h && x > but.q.x - but.margin / 2/*<added*/ + but.q.h + but.margin && x < panel.search.x + panel.search.w);
+		this.lbtnDn = panel.search.active = (y < panel.search.h && x > but.q.x - but.margin / 2 + but.q.h + but.margin && x < panel.search.x + panel.search.w);
 		if (!this.lbtnDn) {
 			this.offset = this.start = this.end = this.cx = 0;
 			timer.clear(timer.cursor);
@@ -220,10 +220,10 @@ class Search {
 				this.end = panel.search.txt.length;
 				break;
 			case vk.copy:
-				if (this.start != this.end) this.doc.parentWindow.clipboardData.setData('text', panel.search.txt.substring(this.start, this.end));
+				if (this.start != this.end) $.setClipboardData(panel.search.txt.substring(this.start, this.end));
 				break;
 			case vk.cut:
-				if (this.start != this.end) this.doc.parentWindow.clipboardData.setData('text', panel.search.txt.substring(this.start, this.end)); // fall through
+				if (this.start != this.end) $.setClipboardData(panel.search.txt.substring(this.start, this.end)); // fall through
 			case vk.back:
 				this.record();
 				if (this.start == this.end) {
@@ -285,8 +285,8 @@ class Search {
 				this.end = this.start;
 				break;
 			case vk.paste:
-				text = this.doc.parentWindow.clipboardData.getData('text') || ''; // fall through
-				text = text.replace(/(\r\n|\n|\r)/gm, ' ');
+				text = $.getClipboardData() || '';
+				text = text.replace(/(\r\n|\n|\r)/gm, ' '); // fall through
 			default:
 				this.record();
 				if (this.start == this.end) {
@@ -301,7 +301,7 @@ class Search {
 					this.start = this.cx;
 					this.end = this.start;
 				} else {
-					panel.search.txt = panel.search.txt.substring(this.start) + text + panel.search.txt.substring(0, this.end);
+					panel.search.txt = panel.search.txt.substring(0, this.end) + text + panel.search.txt.substring(this.start);
 					this.calcText();
 					this.offset = this.offset < this.end - this.start ? this.offset - this.end + this.start : 0;
 					this.cx = this.end + text.length;
@@ -381,7 +381,7 @@ class Search {
 	}
 
 	rbtn_up(x, y) {
-		this.paste = this.doc.parentWindow.clipboardData.getData('text') ? true : false;
+		this.paste = $.getClipboardData() ? true : false;
 		searchMenu.load(x, y);
 	}
 
@@ -452,7 +452,7 @@ class Find {
 			if (!this.jSearch) return;
 			pop.sel_items = [];
 			this.jump_search = true;
-			window.RepaintRect(0, this.j.y, ui.w, this.j.h + 1);
+			panel.treePaint();
 			timer.clear(timer.jsearch1);
 			timer.jsearch1.id = setTimeout(() => {
 				pop.tree.some((v, i) => {
@@ -482,7 +482,7 @@ class Find {
 					} else if (pos >= 0 && pos < pop.tree.length) pop.setPlaylistSelection(pos, pop.tree[pos]);
 				}
 				this.jSearch = '';
-				window.RepaintRect(0, this.j.y, ui.w, this.j.h + 1);
+				panel.treePaint();
 				timer.jsearch2.id = null;
 			}, 1200);
 		}

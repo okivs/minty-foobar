@@ -1,3 +1,5 @@
+﻿'use strict';
+
 class Library {
 	constructor() {
 		let fixedPlaylistIndex = -1;
@@ -19,7 +21,7 @@ class Library {
 		this.full_list_need_sort = false;
 		this.init = false;
 		this.libNode = [];
-		this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist('Library Tree Panel Selection'))][ppt.libSource];
+		this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.panelSelectionPlaylist))][ppt.libSource];
 		this.full_list = this.list.Clone();
 		this.noListUpd = false;
 		this.none = '';
@@ -355,9 +357,6 @@ class Library {
 		}
 		this.upd = 0;
 	}
-	rememberViewProp() {
-		return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`
-	}
 
 	checkView() {
 		const startIX = ppt.rememberView ? panel.grp.length : 0
@@ -420,7 +419,7 @@ class Library {
 			}
 		}
 		if (!items) {
-			this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist('Library Tree Panel Selection'))][ppt.libSource];
+			this.list = [plman.GetPlaylistItems($.pl_active), !ppt.fixedPlaylist ? fb.GetLibraryItems() : plman.GetPlaylistItems(fixedPlaylistIndex), plman.GetPlaylistItems(plman.FindPlaylist(ppt.panelSelectionPlaylist))][ppt.libSource];
 			if (ppt.libSource != 2) this.full_list = this.list.Clone();
 		}
 		if (ppt.libSource && (!this.list.Count || !fb.IsLibraryEnabled())) {
@@ -587,6 +586,10 @@ class Library {
 				ppt.rememberView ? ppt.set(this.rememberViewProp(), null) : ppt.set(!panel.imgView ? 'Tree' : 'Tree Image', JSON.stringify(this.exp));
 			}
 		} else ppt.process = false;
+	}
+
+	rememberViewProp() {
+		return `Tree.View ${$.padNumber(ppt.viewBy, 2) + (!panel.imgView ? '' : ' Image')}`
 	}
 
 	removed(handleList) {
@@ -857,20 +860,6 @@ class Library {
 		}];
 	}
 
-	setAutoExpandLimit() {
-		const ok_callback = (status, input) => {
-			if (status != 'cancel') {
-				if (!input || input == ppt.autoExpandLimit) return false;
-				ppt.autoExpandLimit = Math.round(input);
-				if (isNaN(ppt.autoExpandLimit)) ppt.autoExpandLimit = 350;
-				ppt.autoExpandLimit = $.clamp(ppt.autoExpandLimit, 10, 1000);
-				pop.collapseAll();
-				this.rootNodes(ppt.rememberTree, ppt.process);
-			}
-		}
-		popUpBox.input('Auto Expand Limit', 'Enter number 10-1000', ok_callback, '', ppt.autoExpandLimit);
-	}
-
 	setMemory(i) {
 		const o = ['rememberTree', 'rememberView'][i];
 		ppt[o] = ppt[o] ? 0 : 1;
@@ -880,7 +869,7 @@ class Library {
 
 	sort(name) {
 		if (panel.multiProcess) name = name.replace(/#!#/g, '');
-		if (panel.noDisplay) name = name.replace(/ {2}#@#/g, '').replace(/#@#/g, '');
+		if (panel.noDisplay) name = name.replace(/#@#/g, '');
 		if (panel.colMarker) name = name.replace(/@!#.*?@!#/g, '');
 		if (panel.imgView) name = name.replace(/\^@\^/g, '  ');
 		return [name, name, name, false];
@@ -907,7 +896,49 @@ class Library {
 		} else this.updateLibrary(handleList, handleType)
 	}
 
+	isMainChanged(handleList) {
+		let i, items;
+		let tree_type = !panel.folderView ? 0 : 1;
+		switch (tree_type) { // check for changes to items; any change updates all
+			case 0: {
+				let tfo = FbTitleFormat(panel.view);
+				items = tfo.EvalWithMetadbs(handleList);
+				return handleList.Convert().some((h, j) => {
+					i = this.list.Find(h);
+					if (i != -1) {
+						let libItem = [];
+						if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
+						else {
+							libItem = this.libNode[i].slice();
+							libItem[0] = libItem[0].split('^@^');
+							libItem = libItem.flat();
+						}
+						if (!$.isArray(libItem) || !items[j]) return 'outOfBounds';
+						return !$.equal(libItem, items[j].split(panel.splitter));
+					}
+				});
+			}
+			case 1:
+				items = handleList.GetLibraryRelativePaths();
+				return handleList.Convert().some((h, j) => {
+					i = this.list.Find(h);
+					if (i != -1) {
+						let libItem = [];
+						if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
+						else {
+							libItem = this.libNode[i].slice();
+							libItem[0] = libItem[0].split('^@^');
+							libItem = libItem.flat();
+						}
+						if (!$.isArray(libItem)) return 'outOfBounds';
+						return !$.equal(libItem, items[j].split('\\'));
+					}
+				});
+		}
+	}
+
 	updateLibrary(handleList, handleType) {
+		if (this.list.Count != this.libNode.length) return;
 		this.noListUpd = false;
 		switch (handleType) {
 			case 0:
@@ -917,57 +948,16 @@ class Library {
 				else this.lib_update();
 				break;
 			case 1: {
-				let i, items, upd_done = false;
-				let tree_type = !panel.folderView ? 0 : 1;
-				switch (tree_type) { // check for changes to items; any change updates all
-					case 0: {
-						let tfo = FbTitleFormat(panel.view);
-						items = tfo.EvalWithMetadbs(handleList);
-						handleList.Convert().some((h, j) => {
-							i = this.list.Find(h);
-							if (i != -1) {
-								let libItem = '';
-								if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
-								else {
-									libItem = this.libNode[i].slice();
-									libItem[0] = libItem[0].split('^@^');
-									libItem = libItem.flat();
-								}
-								if (!$.equal(libItem, items[j].split(panel.splitter))) {
-									this.removed(handleList);
-									this.added(handleList);
-									if (ui.w < 1 || !window.IsVisible) this.upd = 2;
-									else this.lib_update();
-									return upd_done = true;
-								}
-							}
-						});
-						break;
-					}
-					case 1:
-						items = handleList.GetLibraryRelativePaths();
-						handleList.Convert().some((h, j) => {
-							i = this.list.Find(h);
-							if (i != -1) {
-								let libItem = '';
-								if (!panel.imgView || panel.lines != 2) libItem = this.libNode[i];
-								else {
-									libItem = this.libNode[i].slice();
-									libItem[0] = libItem[0].split('^@^');
-									libItem = libItem.flat();
-								}
-								if (!$.equal(libItem, items[j].split('\\'))) {
-									this.removed(handleList);
-									this.added(handleList);
-									if (ui.w < 1 || !window.IsVisible) this.upd = 2;
-									else this.lib_update();
-									return upd_done = true;
-								}
-							}
-						});
-						break;
+				// check for changes to items; any change updates all
+				const isMainChanged = this.isMainChanged(handleList);
+				if (isMainChanged == 'outOfBounds') return;
+				if (isMainChanged) {
+					this.removed(handleList);
+					this.added(handleList);
+					if (ui.w < 1 || !window.IsVisible) this.upd = 2;
+					else this.lib_update();
+					break;
 				}
-				if (upd_done) break;
 				if (ppt.filterBy && !this.filterQuery.includes('$searchtext')) { // filter: check if not done 
 					let newFilterItems = $.query(handleList, this.filterQuery);
 					let origFilter = this.list.Clone();

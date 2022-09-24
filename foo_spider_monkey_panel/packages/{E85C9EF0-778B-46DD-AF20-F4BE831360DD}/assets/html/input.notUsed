@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 	<html>
 	<head>
-	<meta http-equiv="x-ua-compatible" content="IE=8"/>
-	 <link rel="stylesheet" type="text/css" href="styles10.css">
-	<style type="text/css">
+	<meta http-equiv="x-ua-compatible" content="IE=8" />
+    <link rel="stylesheet" type="text/css" href="styles10.css">
+    <style type="text/css">
 	html, body {padding:0; margin:0;}
 	.container {font:caption; padding:0.63em 1.57em; word-wrap:break-word; white-space:pre-wrap;}
-	#div_text {padding-top:1.25em; padding-bottom:1.25em;
+	#div_text {padding-top:1.57em; padding-bottom:1.57em; 
 		background:#ffffff; /* Old browsers */
 		background:-moz-linear-gradient(top,  #ffffff 0%, #f0f0f0 100%); /* FF3.6-15 */
 		background:-webkit-linear-gradient(top,  #ffffff 0%,#f0f0f0 100%); /* Chrome10-25,Safari5.1-6 */
@@ -39,7 +39,6 @@
 			}
 			catch(e) {
 			}
-
 			if (parsed_args) {
 				document.title = parsed_args[0];
 				window.div_text.innerText = parsed_args[1];
@@ -51,7 +50,7 @@
 				var def = parsed_args[5];
 				window.input_container.insertAdjacentHTML('beforeend', '<div><label for="in">'+input+'</label><input id="in" name="input" value="'+def+'"></input></div>');
 			}
-
+			
 			var window_w = 558;
 			var window_h = 425;
 			window_h = 17 + window.div_text.offsetHeight + window.input_container.offsetHeight + window.btn_cnt.offsetHeight;
@@ -60,12 +59,10 @@
 				window.resizeTo(window_w, window_h);
 				window_h = 17 + window.div_text.offsetHeight + window.input_container.offsetHeight + window.btn_cnt.offsetHeight;
 			}
-
 			var left = (screen.width - window_w) / 2;
 			var top = (screen.height - window_h) / 2;
 			window.resizeTo(window_w, window_h);
 			window.moveTo(left, top);
-
 			window.btn_ok.onclick = function () {
 				callback && callback("ok", document.getElementsByName('input')[0].value);
 				close_window();
@@ -74,13 +71,11 @@
 				if (window.event.keyCode == 13 && window.btn_ok.onclick) {
 					window.btn_ok.onclick();
 				}
-			}
-
+			};
 			window.btn_cancel.onclick = function () {
 				callback && callback("cancel", false);
 				close_window();
-			}
-
+			};
 			window.document.body.focus();
 			window.btn_ok.focus();
 		</script>

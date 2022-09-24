@@ -183,6 +183,18 @@ function on_mouse_rbtn_up(x, y) {
     return true;
 }
 
+function on_mouse_move(x, y) {
+    if (x > 0 && x < window.Width && y > 0 && y < window.Height) {
+        colorFont = _RGB(240, 240, 240);
+        window.Repaint();
+    }
+}
+
+function on_mouse_leave() {
+    colorFont = window.GetColourCUI(1);
+    window.Repaint();
+}
+
 function on_paint(gr) {
     let infoText;
 

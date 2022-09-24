@@ -1,3 +1,5 @@
+﻿'use strict';
+
 class Panel {
 	constructor() {
 		const DT_CENTER = 0x00000001;
@@ -8,6 +10,7 @@ class Panel {
 		const DT_END_ELLIPSIS = 0x00008000;
 
 		this.cc = DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
+		this.cce = this.cc | DT_END_ELLIPSIS;
 		this.curPattern = '';
 		this.defaultViews = [];
 		this.defFilterPatterns = [];
@@ -27,6 +30,7 @@ class Panel {
 		this.menu = [];
 		this.paint_y = Math.floor(ui.style.topBarShow || !ppt.sbarShow ? ui.row.h * 1.2 : 0);
 		this.pn_h_auto = ppt.pn_h_auto && ppt.rootNode;
+		this.propNames = [];
 		this.newView = true;
 		this.pos = -1;
 		this.rc = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS;
@@ -37,6 +41,7 @@ class Panel {
 		this.softSplitter = '\u00ac';
 		this.splitter = '\u00a6';
 		this.sortBy = '';
+		this.sourceName = '';
 		this.statistics = false;
 		this.viewName = '';
 		this.zoomFilter = Math.max(ppt.zoomFilter / 100, 0.7);
@@ -125,7 +130,7 @@ class Panel {
 				this.filter.x = ui.sz.marginSearch;
 				break;
 			case !ppt.settingsShow:
-				this.filter.x = ui.w - this.filter.w;
+				this.filter.x = ui.w - ui.sz.marginSearch - this.filter.w;
 				break;
 			case !ppt.filterShow:
 				this.filter.x = ui.w - ui.sz.marginSearch * 2 - this.settings.w + this.settings.offset;
@@ -133,6 +138,17 @@ class Panel {
 		}
 		this.search.x = Math.round(ui.sz.marginSearch + ui.row.h);
 		this.search.w = ppt.searchShow && (ppt.filterShow || ppt.settingsShow) ? this.filter.x - this.search.x - 11 : ui.w - ui.sz.marginSearch - Math.round(ui.row.h * 0.75) - this.search.x + 1;
+	}
+
+	clear(type) {
+		if (type == 'views' || type == 'both') {
+			for (let i = 0; i < 100; i++) {
+				ppt.set(`View ${$.padNumber(i, 2)}: Name // Pattern`, null);
+			}
+		}
+		if (type == 'filters' || type == 'both') {
+			for (let i = 0; i < 100; i++) ppt.set(`Filter ${$.padNumber(i, 2)}: Name // Query`, null);
+		}
 	}
 
 	forcePaint() {
@@ -154,7 +170,6 @@ class Panel {
 		this.multiProcess = false;
 		this.noDisplay = false;
 		this.multiValueTagSort = '';
-		//this.softSplit = false;
 		this.statistics = false;
 		this.view = '';
 		this.view_ppt.forEach((v, i) => {
@@ -166,6 +181,7 @@ class Panel {
 				}
 			}
 		});
+
 		grps = [];
 		this.filter_ppt.forEach((v, i) => {
 			if (v.includes('//')) {
@@ -207,6 +223,12 @@ class Panel {
 		this.folderView = ppt.viewBy == this.folder_view;
 		if (grpsOnly) return;
 		this.colMarker = this.grp[ppt.viewBy].type.includes('$colour{');
+		let valid = false;
+		if (ui.img.blurDark && ppt.text_hUse) {
+			const c = ppt.text_h.replace(/[^0-9.,-]/g, '').split(/[,-]/);
+			if (c.length == 3 || c.length == 4) valid = true;
+		}
+		this.textDiffHighlight = ui.img.blurDark && !ppt.highLightRow && !(ppt.text_hUse && valid) && ppt.highLightText && !this.colMarker;
 		if (this.folderView) {
 			this.samePattern = !this.newView && !this.init;
 		} else {
@@ -274,7 +296,7 @@ class Panel {
 				const sub1 = this.view.substring(0, ix1 + 11);
 				const sub2 = this.view.substring(ix1 + 11, ix2);
 				const sub3 = this.view.substring(ix2);
-				this.view = sub1 + sub2.replace(/[¦|]/g, '') + sub3;
+				this.view = sub1 + sub2.replace(/[\u00a6|]/g, '') + sub3;
 				ix1 = this.view.indexOf('$nodisplay{');
 				ix2 = this.view.indexOf('}', ix1);
 				this.view = $.replaceAt(this.view, ix2, '  #@#');
@@ -317,6 +339,12 @@ class Panel {
 		this.menu = this.grp.map(name);
 	}
 
+	getFilterIndex(arr, name, type) {
+		let findFilterIndex = arr.findIndex(v => v.name === name && v.type === type);
+		if (findFilterIndex != -1) ppt.filterBy = findFilterIndex;
+		return findFilterIndex;
+	}
+
 	getFilters() {
 		let pt = [
 			['Filter 01: Name // Query', 'Filter // Button Name'],
@@ -357,8 +385,8 @@ class Panel {
 				if (prop) {
 					if (prop.includes('//') || prop.includes('/hide/')) dialogFilters.push(prop);
 					if (prop.includes('//')) this.filter_ppt.push(prop);
-					pptNo++;
 				}
+				if (prop || prop === null) pptNo++;
 			}
 		}
 
@@ -395,6 +423,14 @@ class Panel {
 		this.defFilterPatterns.push(this.defFilterPatterns.shift());
 	}
 
+	getViewIndex(arr, name, type) {
+		let findViewIndex = arr.findIndex(v => {
+			return v.name.trim() === name && v.type.trimStart() === type;
+		})
+		if (findViewIndex != -1) ppt.viewBy = findViewIndex;
+		return findViewIndex;
+	}
+
 	getViews() {
 		let pt = [
 			['View 01: Name // Pattern', 'View by Folder Structure // Pattern Not Configurable'],
@@ -418,6 +454,14 @@ class Panel {
 		this.defaultViews = this.defViewPatterns.map(v => v.type);
 		this.defaultViews.shift();
 
+		const names1 = ['Artist', 'Album Artist', 'Album', 'Album', 'Genre', 'Year'];
+		const names2 = ['Album', 'Album', 'Track', 'Track', 'Album', 'Album'];
+		const albumArtGrpNames = $.jsonParse(ppt.albumArtGrpNames, {});
+		this.defaultViews.forEach((v, i) => {
+			if (!albumArtGrpNames[`${v}1`]) albumArtGrpNames[`${v}1`] = names1[i];
+			if (!albumArtGrpNames[`${v}2`]) albumArtGrpNames[`${v}2`] = names2[i];
+		});
+
 		const dialogViews = [];
 		this.view_ppt = [];
 		let pptNo = 0;
@@ -434,12 +478,13 @@ class Panel {
 				if (prop) {
 					if (prop.includes('//') || prop.includes('/hide/')) dialogViews.push(prop);
 					if (prop.includes('//')) this.view_ppt.push(prop);
-					pptNo++;
 				}
+				if (prop || prop === null) pptNo++;
 			}
 		}
 
 		pt = undefined;
+
 		let nm = '';
 		for (let i = pptNo + 1; i < 100; i++) {
 			nm = ppt.get(`View ${$.padNumber(i, 2)}: Name // Pattern`);
@@ -448,6 +493,19 @@ class Panel {
 				if (nm.includes('//')) this.view_ppt.push(nm);
 			}
 		}
+
+		nm = '';
+		this.propNames = [];
+		for (let i = 1; i < 100; i++) {
+			const propName = `View ${$.padNumber(i, 2)}: Name // Pattern`;
+			nm = ppt.get(propName);
+			if (nm) {
+				if (nm.includes('//')) {
+					this.propNames.push(propName);
+				}
+			}
+		}
+		this.propNames.shift();
 
 		this.dialogGrps = dialogViews.map(v => {
 			if (v.includes('//')) {
@@ -471,20 +529,19 @@ class Panel {
 		this.dialogGrps.push(this.dialogGrps.shift());
 		this.defViewPatterns.push(this.defViewPatterns.shift());
 		this.view_ppt.push(this.view_ppt.shift());
-	}
-
-	getFilterIndex(arr, name, type) {
-		let findFilterIndex = arr.findIndex(v => v.name === name && v.type === type);
-		if (findFilterIndex != -1) ppt.filterBy = findFilterIndex;
-		return findFilterIndex;
-	}
-
-	getViewIndex(arr, name, type) {
-		let findViewIndex = arr.findIndex(v => {
-			return v.name.trim() === name && v.type.trimStart() === type;
-		})
-		if (findViewIndex != -1) ppt.viewBy = findViewIndex;
-		return findViewIndex;
+		
+		const albumArtGrpNameKeys = Object.keys(albumArtGrpNames);
+		if (albumArtGrpNameKeys.length > 100) {
+			let keysPresent = this.dialogGrps.map(v => `${v.type}1`);
+			albumArtGrpNameKeys.forEach(v => {
+				if (!keysPresent.includes(`${v}1`)) delete albumArtGrpNames[`${v}1`];
+			});
+			keysPresent = this.dialogGrps.map(v => `${v.type}2`);
+			albumArtGrpNameKeys.forEach(v => {
+				if (!keysPresent.includes(`${v}2`)) delete albumArtGrpNames[`${v}2`];
+			});
+		}
+		ppt.albumArtGrpNames = JSON.stringify(albumArtGrpNames);
 	}
 
 	load() {
@@ -495,6 +552,61 @@ class Panel {
 		ppt.filterShow = true;
 		ppt.settingsShow = true
 		window.Reload();
+	}
+
+	on_size(fontChanged) {
+		const ln_sp = ui.style.topBarShow && !ui.id.local ? Math.floor(ui.row.h * 0.1) : 0;
+		const sbarStyle = !ppt.sbarFullHeight ? 2 : 0;
+		this.calcText();
+		this.ln.x = ppt.countsRight || ppt.itemShowDuration || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
+		this.ln.w = ui.w - this.ln.x - 1;
+		this.search.h = ui.style.topBarShow ? ui.row.h + (!ui.id.local ? ln_sp * 2 : 0) : ui.sz.margin;
+		this.search.sp = this.search.h - ln_sp;
+		let sp = ui.h - this.search.h - (ui.style.topBarShow ? 0 : ui.sz.margin);
+		this.rows = sp / ui.row.h;
+		this.rows = Math.floor(this.rows);
+		sp = ui.row.h * this.rows;
+		this.node_y = Math.round((ui.row.h - ui.sz.node) / 1.75);
+		this.filter.y = sp + this.search.h - ui.row.h * 0.9;
+		if (this.init || fontChanged || !this.tree.y) this.tree.y = this.search.h;
+		this.paint_y = Math.floor(ui.style.topBarShow || !ppt.sbarShow ? this.search.h : 0);
+
+		const sbar_top = !ui.sbar.type ? 5 : ui.style.topBarShow ? 3 : 0;
+		const sbar_bot = !ui.sbar.type ? 5 : 0;
+		this.sbar_o = [ui.sbar.arrowPad, Math.max(Math.floor(ui.sbar.but_w * 0.2), 2) + ui.sbar.arrowPad * 2, 0][ui.sbar.type];
+		const vertical = !ppt.albumArtFlowMode || ui.h - this.search.h > ui.w - ui.sbar.w;
+		switch (true) {
+			case !this.imgView || vertical: {
+				this.sbar_x = ui.w - ui.sbar.sp;
+				const top_corr = [this.sbar_o - (ui.sbar.but_h - ui.sbar.but_w) / 2, this.sbar_o, 0][ui.sbar.type];
+				const bot_corr = [(ui.sbar.but_h - ui.sbar.but_w) / 2 - this.sbar_o, -this.sbar_o, 0][ui.sbar.type];
+				let sbar_y = (ui.sbar.type < sbarStyle || ui.style.topBarShow ? this.search.sp + 1 : 0) + sbar_top + top_corr;
+				let sbar_h = ui.sbar.type < sbarStyle ? sp + 1 - sbar_top - sbar_bot + bot_corr * 2 : ui.h - sbar_y - sbar_bot + bot_corr;
+				if (ui.sbar.type == 2) {
+					sbar_y += 1;
+					sbar_h -= 2;
+				}
+				sbar.metrics(this.sbar_x, sbar_y, ui.sbar.w, sbar_h, this.rows, ui.row.h, !this.imgView ? true : vertical);
+				if (this.imgView) img.metrics();
+				break;
+			}
+			case !vertical: {
+				this.sbar_y = ui.h - ui.sbar.sp;
+				let sbar_x = 0;
+				let sbar_w = ui.w;
+				if (ui.sbar.type == 2) {
+					sbar_x += 1;
+					sbar_w -= 2;
+				}
+				sbar.metrics(sbar_x, this.sbar_y, sbar_w, ui.sbar.w, this.rows, ui.row.h, !this.imgView ? true : false);
+				if (this.imgView) img.metrics();
+				break;
+			}
+		}
+		if (this.imgView) {
+			if (this.init) img.sizeDebounce();
+			else if (sbar.scroll > sbar.max_scroll) sbar.checkScroll(sbar.max_scroll);
+		}
 	}
 
 	open(page) {
@@ -536,11 +648,6 @@ class Panel {
 			if (type == 'reset') {
 				this.updateProp(ppt, 'default_value');
 			}
-
-			if (new_cfg || new_ppt || type == 'reset') {
-				men.refreshMainMenu();
-				men.refreshFilterMenu();
-			}
 		}
 
 		this.getViews();
@@ -551,7 +658,458 @@ class Panel {
 			cfgWindow = JSON.stringify(cfgWindow);
 			ppt.set('Library Tree Dialog Box', cfgWindow);
 		}
-		popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
+		if (popUpBox.isHtmlDialogSupported()) popUpBox.config(JSON.stringify([this.dialogGrps, this.dialogFiltGrps, this.defViewPatterns, this.defFilterPatterns]), JSON.stringify(ppt), cfgWindow, ok_callback);
+		else {
+			popUpBox.ok = false;
+			$.trace('options dialog isn\'t available with current operating system. All settings in options are available in panel properties. Common settings are on the menu.');	
+		}
+	}
+
+	searchPaint() {
+		window.RepaintRect(0, 0, ui.w, this.search.h);
+	}
+
+	set(n, i, treeArtToggle) {
+		const prompt = 'This changes various options ' + (i < 5 ? 'on the display tab' : i < 12 ? 'on the display and album art tabs' : '') + '\n\nContinue?';
+		switch (n) {
+			case 'quickSetup':
+				switch (i) {
+					case 0: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = false;
+								ppt.itemShowDuration = false;
+								ppt.nodeStyle = 0;
+								ppt.inlineRoot = false;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = false;
+								ui.sbar.type = 0;
+								ppt.sbarType = 0;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = false;
+								ppt.highLightText = false;
+								ppt.rowStripes = false;
+								ppt.highLightRow = 2;
+								ppt.highLightNode = true;
+								ppt.verticalPad = 3;
+								ppt.rootNode = 1;
+								panel.imgView = ppt.albumArtShow = false;
+								ppt.albumArtLabelType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Traditional Style';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 1: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
+								ppt.nodeStyle = 1;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = false;
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 2;
+								ppt.highLightNode = true;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								panel.imgView = ppt.albumArtShow = false;
+								ppt.albumArtLabelType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Modern Style';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 2: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
+								ppt.itemShowDuration = true;
+								ppt.nodeStyle = 3;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = true;
+								ppt.treeAutoExpandSingle = true;
+								ppt.treeListView = false;
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								panel.imgView = ppt.albumArtShow = false;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 1;
+								ppt.albumArtFlipLabels = true;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
+								ppt.artId = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Ultra Modern Style';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 3: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
+								ppt.nodeStyle = 5;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = false;
+								ui.sbar.type = 0;
+								ppt.sbarType = 0;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = true;
+								ppt.rowStripes = false;
+								ppt.highLightRow = 0;
+								ppt.highLightNode = true;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								panel.imgView = ppt.albumArtShow = false;
+								ppt.albumArtLabelType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Clean';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 4: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
+								ppt.itemShowDuration = false;
+								ppt.nodeStyle = 1;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = true;
+								panel.imgView = ppt.albumArtShow = false;
+								ppt.albumArtLabelType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 2;
+								ppt.highLightNode = true;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: List View';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 5: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 2;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = true;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 2;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Covers [Labels Right]';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 6: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 1;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 1;
+								ppt.thumbNailSize = 2;
+								ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Covers [Labels Bottom]';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 7: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 4;
+								ppt.albumArtFlipLabels = true;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 3;
+								ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Covers [Labels Blend]';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 8: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ui.sbar.type = 1;
+								ppt.sbarType = 1;
+								ppt.sbarShow = 1;
+								ppt.fullLineSelection = true;
+								ppt.highLightText = false;
+								ppt.rowStripes = true;
+								ppt.highLightRow = 1;
+								ppt.highLightNode = false;
+								ppt.verticalPad = 5;
+								ppt.rootNode = 3;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 0;
+								ppt.albumArtFlowMode = false;
+								ppt.albumArtLabelType = 2;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleArtist = 2;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 1;
+								ppt.artId = 4;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Artist Photos [Labels Right]';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 9: ppt.thumbNailSize++; this.load(); break;
+					case 10: ppt.thumbNailSize--; this.load(); break;
+					case 11: {
+						const continue_confirmation = (status, confirmed) => {
+							if (confirmed) {
+								ppt.countsRight = true;
+								ppt.nodeStyle = 1;
+								ppt.inlineRoot = true;
+								ppt.autoCollapse = false;
+								ppt.treeAutoExpandSingle = false;
+								ppt.treeListView = false;
+								panel.imgView = ppt.albumArtShow = true;
+								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
+								ppt.albumArtFlowMode = true;
+								ppt.albumArtLabelType = 1;
+								ppt.itemShowDuration = false;
+								ppt.imgStyleFront = 1;
+								ppt.itemOverlayType = 0;
+								ppt.thumbNailSize = 2;
+								if (!ppt.presetLoadCurView) ppt.artId = 0;
+								ppt.albumArtGrpLevel = 0;
+								this.load();
+							}
+						}
+						const caption = 'Quick Setup: Flow Mode';
+						const wsh = popUpBox.isHtmlDialogSupported() ? popUpBox.confirm(caption, prompt, 'Yes', 'No', continue_confirmation) : true;
+						if (wsh) continue_confirmation('ok', $.wshPopup(prompt, caption));
+						break;
+					}
+					case 12:
+						ppt.toggle('presetLoadCurView');
+						return;
+				}
+				break;
+			case 'Filter':
+				lib.searchCache = {};
+				pop.subCounts.filter = {};
+				pop.subCounts.search = {};
+				switch (i) {
+					case this.filter.menu.length:
+						ppt.toggle('reset');
+						if (ppt.reset) {
+							this.searchPaint();
+							lib.treeState(true, 2);
+						}
+						break;
+					default:
+						ppt.filterBy = i;
+						this.calcText();
+						if (this.search.txt) lib.upd_search = true;
+						if (!ppt.rememberTree && !ppt.reset) lib.logTree();
+						else if (ppt.rememberTree) lib.logFilter();
+						lib.getLibrary();
+						lib.rootNodes(!ppt.reset ? 1 : 0, true);
+						but.refresh(true);
+						this.searchPaint();
+						if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
+						break;
+				}
+				pop.checkAutoHeight();
+				break;
+			case 'view': {
+				if (this.colMarker) this.draw = false;
+				if (this.search.txt) lib.upd_search = true;
+				this.getFields(i < this.grp.length ? i : ppt.viewBy, ppt.filterBy);
+				this.on_size();
+				lib.searchCache = {};
+				pop.subCounts = {
+					'standard': {},
+					'search': {},
+					'filter': {}
+				};
+				lib.checkView();
+				const key = !ppt.rememberView ? 'def' : this.viewName;
+				if ((ppt.rememberView || treeArtToggle) && lib.exp[key]) lib.readTreeState(false, treeArtToggle);
+				lib.getLibrary(treeArtToggle);
+				lib.rootNodes((ppt.rememberView || treeArtToggle), (ppt.rememberView || treeArtToggle) ? true : false);
+				if (ppt.rememberView) lib.logTree();
+				this.draw = true;
+				if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
+				pop.checkAutoHeight();
+				break;
+			}
+		}
+	}
+
+	setHeight(n) {
+		if (!this.pn_h_auto) return;
+		ppt.pn_h = n || this.imgView ? ppt.pn_h_max : ppt.pn_h_min;
+		window.MaxHeight = window.MinHeight = ppt.pn_h;
+	}
+
+	setRootName() {
+		this.sourceName = ['Active Playlist', !ppt.fixedPlaylist ? 'Library' : ppt.fixedPlaylistName, 'Panel'][ppt.libSource];
+		this.viewName = this.grp[ppt.viewBy].name;
+		switch (ppt.rootNode) {
+			case 1:
+				this.rootName = !ppt.showSource ? 'All Music' : this.sourceName;
+				break;
+			case 2:
+				this.rootName = this.viewName + (!ppt.showSource ? '' : ' [' + this.sourceName + ']');
+				break;
+			case 3: {
+				const nm = this.viewName.replace(/view by|^by\b/i, '').trim();
+				const basenames = nm.split(' ').map(v => pluralize(v));
+				const basename = basenames.join(' ').replace(/(album|artist|top|track)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
+				this.rootName = (!this.imgView ? `${!ppt.showSource ? 'All' : this.sourceName} (#^^^^# ${basename})` : `All #^^^^# ${basename}`);
+				this.rootName1 = (!this.imgView ? `${!ppt.showSource ? 'All' : this.sourceName} (1 ${nm})` : `All 1 ${nm}`);
+				break;
+			}
+		}
+	}
+
+	setTopBar() {
+		let sz = Math.round(12 * $.scale * this.zoomFilter);
+		let mod = 0;
+		if (sz > 15) mod = (sz % 2) - 1;
+		this.filter.font = gdi.Font('Segoe UI', this.zoomFilter > 1.05 ? Math.floor(11 * $.scale * this.zoomFilter) : Math.max(11 * $.scale * this.zoomFilter, 9), 1);
+		this.settings.font = gdi.Font('Segoe UI Symbol', sz + mod, 0);
+		this.settings.icon = '\uE10C';
+		this.settings.offset = Math.round(1 * this.settings.font.Size / 17);
+	}
+
+	sort(li) {
+		switch (this.folderView) {
+			case true:
+				li.OrderByRelativePath();
+				break;
+			default: {
+				let tfo = FbTitleFormat(this.sortBy);
+				li.OrderByFormat(tfo, 1);
+				break;
+			}
+		}
+	}
+
+	treePaint() {
+		window.RepaintRect(0, this.paint_y, ui.w, ui.h - this.paint_y + 1);
 	}
 
 	updateProp(prop, value) {
@@ -560,6 +1118,9 @@ class Panel {
 		});
 
 		img.asyncBypass = Date.now();
+		img.preLoadItems = [];
+		clearInterval(img.timer.preLoad);
+		img.timer.preLoad = null;
 		pop.autoPlay.send = ppt.autoPlay;
 		pop.autoPlay = {
 			click: ppt.clickAction < 2 ? false : ppt.clickAction,
@@ -636,419 +1197,6 @@ class Panel {
 		pop.checkAutoHeight();
 		if (sbar.scroll > sbar.max_scroll) sbar.checkScroll(sbar.max_scroll);
 		window.Repaint();
-
-	}
-
-	on_size(fontChanged) {
-		const ln_sp = ui.style.topBarShow && !ui.id.local ? Math.floor(ui.row.h * 0.1) : 0;
-		const sbarStyle = !ppt.sbarFullHeight ? 2 : 0;
-		this.calcText();
-		this.ln.x = ppt.countsRight || ppt.rowStripes || ppt.fullLineSelection || pop.inlineRoot ? 0 : ui.sz.marginSearch;
-		this.ln.w = ui.w - this.ln.x - 1;
-		this.search.h = ui.style.topBarShow ? ui.row.h + (!ui.id.local ? ln_sp * 2 : 0) : ui.sz.margin;
-		this.search.sp = this.search.h - ln_sp;
-		let sp = ui.h - this.search.h - (ui.style.topBarShow ? 0 : ui.sz.margin);
-		this.rows = sp / ui.row.h;
-		this.rows = Math.floor(this.rows);
-		sp = ui.row.h * this.rows;
-		this.node_y = Math.round((ui.row.h - ui.sz.node) / 1.75);
-		this.filter.y = sp + this.search.h - ui.row.h * 0.9;
-		if (this.init || fontChanged) this.tree.y = this.search.h;
-		this.paint_y = Math.floor(ui.style.topBarShow || !ppt.sbarShow ? this.search.h : 0);
-
-		const sbar_top = !ui.sbar.type ? 5 : ui.style.topBarShow ? 3 : 0;
-		const sbar_bot = !ui.sbar.type ? 5 : 0;
-		this.sbar_o = [ui.sbar.arrowPad, Math.max(Math.floor(ui.sbar.but_w * 0.2), 2) + ui.sbar.arrowPad * 2, 0][ui.sbar.type];
-		const vertical = !ppt.albumArtFlowMode || ui.h - this.search.h > ui.w - ui.sbar.w;
-		switch (true) {
-			case !this.imgView || vertical: {
-				this.sbar_x = ui.w - ui.sbar.sp;
-				const top_corr = [this.sbar_o - (ui.sbar.but_h - ui.sbar.but_w) / 2, this.sbar_o, 0][ui.sbar.type];
-				const bot_corr = [(ui.sbar.but_h - ui.sbar.but_w) / 2 - this.sbar_o, -this.sbar_o, 0][ui.sbar.type];
-				let sbar_y = (ui.sbar.type < sbarStyle || ui.style.topBarShow ? this.search.sp + 1 : 0) + sbar_top + top_corr;
-				let sbar_h = ui.sbar.type < sbarStyle ? sp + 1 - sbar_top - sbar_bot + bot_corr * 2 : ui.h - sbar_y - sbar_bot + bot_corr;
-				if (ui.sbar.type == 2) {
-					sbar_y += 1;
-					sbar_h -= 2;
-				}
-				sbar.metrics(this.sbar_x, sbar_y, ui.sbar.w, sbar_h, this.rows, ui.row.h, !this.imgView ? true : vertical);
-				if (this.imgView) img.metrics();
-				break;
-			}
-			case !vertical: {
-				this.sbar_y = ui.h - ui.sbar.sp;
-				let sbar_x = 0;
-				let sbar_w = ui.w;
-				if (ui.sbar.type == 2) {
-					sbar_x += 1;
-					sbar_w -= 2;
-				}
-				sbar.metrics(sbar_x, this.sbar_y, sbar_w, ui.sbar.w, this.rows, ui.row.h, !this.imgView ? true : false);
-				if (this.imgView) img.metrics();
-				break;
-			}
-		}
-		if (this.imgView) {
-			if (this.init) img.sizeDebounce();
-			else if (sbar.scroll > sbar.max_scroll) sbar.checkScroll(sbar.max_scroll);
-		}
-	}
-
-	searchPaint() {
-		window.RepaintRect(0, 0, ui.w, this.search.h);
-	}
-
-	set(n, i, treeArtToggle) {
-		const msg = 'This option changes various options\n\nContinue?';
-		switch (n) {
-			case 'quickSetup':
-				switch (i) {
-					case 0: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ppt.countsRight = false;
-								ppt.nodeStyle = 0;
-								ppt.inlineRoot = false;
-								ppt.autoCollapse = false;
-								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
-								ui.sbar.type = 0;
-								ppt.sbarType = 0;
-								ppt.sbarShow = 2;
-								ppt.fullLineSelection = false;
-								ppt.highLightText = true;
-								ppt.rowStripes = false;
-								ppt.highLightRow = 3;
-								ppt.highLightNode = true;
-								ppt.verticalPad = 3;
-								ppt.rootNode = 1;
-								panel.imgView = ppt.albumArtShow = false;
-								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
-								ppt.artId = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: Traditional Style', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 1: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ppt.countsRight = true;
-								ppt.nodeStyle = 2;
-								ppt.inlineRoot = true;
-								ppt.autoCollapse = false;
-								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 2;
-								ppt.highLightNode = true;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								panel.imgView = ppt.albumArtShow = false;
-								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
-								ppt.artId = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: Modern Style', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 2: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ppt.countsRight = true;
-								ppt.nodeStyle = 3;
-								ppt.inlineRoot = true;
-								ppt.autoCollapse = true;
-								ppt.treeAutoExpandSingle = true;
-								ppt.treeListView = false;
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 1;
-								ppt.highLightNode = false;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								panel.imgView = ppt.albumArtShow = false;
-								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
-								ppt.artId = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: Ultra Modern Style', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 3: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ppt.countsRight = true;
-								ppt.nodeStyle = 2;
-								ppt.inlineRoot = true;
-								ppt.autoCollapse = false;
-								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = true;
-								panel.imgView = ppt.albumArtShow = false;
-								ppt.albumArtLabelType = 1;
-								ppt.thumbNailSize = 1;
-								ppt.artId = 0;
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 2;
-								ppt.highLightNode = true;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: List View', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 4: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 1;
-								ppt.highLightNode = false;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								ppt.treeListView = false;
-								panel.imgView = ppt.albumArtShow = true;
-								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
-								ppt.albumArtFlowMode = false;
-								ppt.albumArtLabelType = 2;
-								ppt.imgStyleFront = 1;
-								ppt.itemOverlayType = 2;
-								ppt.thumbNailSize = 0;
-								ppt.artId = 0;
-								ppt.albumArtGrpLevel = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: List View + Album Covers', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 5: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 1;
-								ppt.highLightNode = false;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								ppt.treeListView = false;
-								panel.imgView = ppt.albumArtShow = true;
-								if (!ppt.presetLoadCurView) ppt.viewBy = 0;
-								ppt.albumArtFlowMode = false;
-								ppt.albumArtLabelType = 2;
-								ppt.imgStyleArtist = 2;
-								ppt.itemOverlayType = 0;
-								ppt.thumbNailSize = 0;
-								ppt.artId = 4;
-								ppt.albumArtGrpLevel = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: List View + Artist Photos', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 6: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ui.sbar.type = 1;
-								ppt.sbarType = 1;
-								ppt.sbarShow = 1;
-								ppt.fullLineSelection = true;
-								ppt.highLightText = false;
-								ppt.rowStripes = true;
-								ppt.highLightRow = 1;
-								ppt.highLightNode = false;
-								ppt.verticalPad = 5;
-								ppt.rootNode = 3;
-								ppt.treeListView = false;
-								panel.imgView = ppt.albumArtShow = true;
-								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
-								ppt.albumArtFlowMode = false;
-								ppt.albumArtLabelType = 1;
-								ppt.imgStyleFront = 1;
-								ppt.itemOverlayType = 1;
-								ppt.thumbNailSize = 1;
-								ppt.artId = 0;
-								ppt.albumArtGrpLevel = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: Album Covers', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 7: {
-						const continue_confirmation = (status, confirmed) => {
-							if (confirmed) {
-								ppt.countsRight = true;
-								ppt.nodeStyle = 2;
-								ppt.inlineRoot = true;
-								ppt.autoCollapse = false;
-								ppt.treeAutoExpandSingle = false;
-								ppt.treeListView = false;
-								panel.imgView = ppt.albumArtShow = true;
-								if (!ppt.presetLoadCurView) ppt.viewBy = 1;
-								ppt.albumArtFlowMode = true;
-								ppt.albumArtLabelType = 1;
-								ppt.imgStyleFront = 1;
-								ppt.itemOverlayType = 1;
-								ppt.thumbNailSize = 1;
-								if (!ppt.presetLoadCurView) ppt.artId = 0;
-								ppt.albumArtGrpLevel = 0;
-								this.load();
-							}
-						}
-						popUpBox.confirm('Quick Setup: Flow Mode', msg, 'Yes', 'No', continue_confirmation);
-						break;
-					}
-					case 8:
-						ppt.toggle('presetLoadCurView');
-						return;
-				}
-				break;
-			case 'Filter':
-				lib.searchCache = {};
-				pop.subCounts.filter = {};
-				pop.subCounts.search = {};
-				switch (i) {
-					case this.filter.menu.length:
-						ppt.toggle('reset');
-						if (ppt.reset) {
-							this.searchPaint();
-							lib.treeState(true, 2);
-						}
-						break;
-					default:
-						ppt.filterBy = i;
-						this.calcText();
-						if (this.search.txt) lib.upd_search = true;
-						if (!ppt.rememberTree && !ppt.reset) lib.logTree();
-						else if (ppt.rememberTree) lib.logFilter();
-						lib.getLibrary();
-						lib.rootNodes(!ppt.reset ? 1 : 0, true);
-						but.refresh(true);
-						this.searchPaint();
-						if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
-						break;
-				}
-				pop.checkAutoHeight();
-				break;
-			case 'view': {
-				if (this.colMarker) this.draw = false;
-				if (this.search.txt) lib.upd_search = true;
-				this.getFields(i < this.grp.length ? i : ppt.viewBy, ppt.filterBy);
-				this.on_size();
-				lib.searchCache = {};
-				pop.subCounts = {
-					'standard': {},
-					'search': {},
-					'filter': {}
-				};
-				lib.checkView();
-				const key = !ppt.rememberView ? 'def' : this.viewName;
-				if ((ppt.rememberView || treeArtToggle) && lib.exp[key]) lib.readTreeState(false, treeArtToggle);
-				lib.getLibrary(treeArtToggle);
-				lib.rootNodes((ppt.rememberView || treeArtToggle), (ppt.rememberView || treeArtToggle) ? true : false);
-				if (ppt.rememberView) lib.logTree();
-				this.draw = true;
-				if (ppt.searchSend == 2 && this.search.txt.length) pop.load(this.list, false, false, false, true, false);
-				pop.checkAutoHeight();
-				break;
-			}
-		}
-	}
-
-	setHeight(n) {
-		if (!this.pn_h_auto) return;
-		ppt.pn_h = n || this.imgView ? ppt.pn_h_max : ppt.pn_h_min;
-		window.MaxHeight = window.MinHeight = ppt.pn_h;
-	}
-
-	setRootName() {
-		this.viewName = this.grp[ppt.viewBy].name;
-		switch (ppt.rootNode) {
-			case 1:
-				this.rootName = 'All Music';
-				break;
-			case 2:
-				this.rootName = this.viewName;
-				break;
-			case 3: {
-				const nm = this.viewName.replace(/view by|^by\b/i, '').trim();
-				const basenames = nm.split(' ').map(v => pluralize(v));
-				const basename = basenames.join(' ').replace(/(album|artist|top)s\s/gi, '$1 ').replace(/(similar artist)\s/gi, '$1s ');
-				this.rootName = !this.imgView ? `All (#^^^^# ${basename})` : `All #^^^^# ${basename}`;
-				this.rootName1 = !this.imgView ? `All (1 ${nm})` : `All 1 ${nm}`;
-				break;
-			}
-		}
-	}
-
-	setTopBar() {
-		let sz = Math.round(12 * $.scale * this.zoomFilter);
-		let mod = 0;
-		if (sz > 15) mod = (sz % 2) - 1;
-		this.filter.font = gdi.Font('Segoe UI', this.zoomFilter > 1.05 ? Math.floor(11 * $.scale * this.zoomFilter) : Math.max(11 * $.scale * this.zoomFilter, 9), 1);
-		this.settings.font = gdi.Font('Segoe UI Symbol', sz + mod, 0);
-		this.settings.icon = '\uE10C';
-		this.settings.offset = Math.round(1 * this.settings.font.Size / 17);
-	}
-
-	sort(li) {
-		switch (this.folderView) {
-			case true:
-				li.OrderByRelativePath();
-				break;
-			default: {
-				let tfo = FbTitleFormat(this.sortBy);
-				li.OrderByFormat(tfo, 1);
-				break;
-			}
-		}
-	}
-
-	treePaint() {
-		window.RepaintRect(0, this.paint_y, ui.w, ui.h - this.paint_y + 1);
-	}
-
-	clear(type) {
-		if (type == 'views' || type == 'both') {
-			for (let i = 0; i < 100; i++) {
-				ppt.set(`View ${$.padNumber(i, 2)}: Name // Pattern`, null);
-			}
-		}
-		if (type == 'filters' || type == 'both') {
-			for (let i = 0; i < 100; i++) ppt.set(`Filter ${$.padNumber(i, 2)}: Name // Query`, null);
-		}
 	}
 
 	zoomReset() {
