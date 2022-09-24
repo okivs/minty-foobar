@@ -32,7 +32,7 @@ To configure the waveform seekbar:
 2. Open `Frontend settings...` and paste the raw contents of [waveform-seekbar.cpp](https://github.com/okivs/minty-foobar/blob/main/minty/waveform-seekbar.cpp).
 3. In `Downmix display` dropdown, select `Mix-down to mono`.
 4. For my particular theme I use these colors:
-    - Background: rgb 49, 49, 46
-    - Foreground: rgb 74, 72, 68
+    - Background: rgb 35, 34, 32
+    - Foreground: rgb 60, 59, 57
     - Highlight: rgb 0, 255, 158
 
