@@ -18,8 +18,8 @@ browser. You can then import all your loved tracks and then use the heart icon
 to love/unlove tracks.
 */
 
-let loved = _chrToImg(chars.heart_on, _RGB(255, 0, 0));
-let unloved = _chrToImg(chars.heart_off, _RGB(255, 0, 0));
+let loved = _chrToImg('\uF004', window.GetColourCUI(4));
+let unloved = _chrToImg('\uF08A', window.GetColourCUI(4));
 let info = _chrToImg(chars.info, _RGB(255, 0, 0));
 
 let panel = new _panel(true);
